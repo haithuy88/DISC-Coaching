@@ -1,0 +1,35 @@
+/* Design tokens – sửa màu/khoảng cách tại đây. */
+:root {
+  --bg: #f8fafc;
+  --heading: #0f172a;
+  --text: #475569;
+  --text-strong: #1e293b;
+  --muted: #64748b;
+  --brand-1: #4f46e5;
+  --brand-2: #2563eb;
+  --brand-3: #0ea5e9;
+  --brand-gradient: linear-gradient(120deg, var(--brand-1), var(--brand-2) 55%, var(--brand-3));
+  --success: #059669;
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --warn: #b45309;
+  --warn-bg: rgba(245, 158, 11, 0.14);
+  --error: #b91c1c;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --info-bg: rgba(37, 99, 235, 0.08);
+
+  --glass: rgba(255, 255, 255, 0.75);
+  --glass-strong: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --line: rgba(15, 23, 42, 0.1);
+  --shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.18);
+  --glow: 0 14px 34px -10px rgba(79, 70, 229, 0.38);
+  --blur: 24px;
+
+  --radius-lg: 28px;
+  --radius-md: 20px;
+  --radius-pill: 999px;
+  --focus: 0 0 0 3px #fff, 0 0 0 6px var(--brand-2);
+
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
