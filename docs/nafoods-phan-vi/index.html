@@ -1,0 +1,420 @@
+<title>Nafoods Phần VI Thực Chiến</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: một cột đọc 960px; mỗi buổi là một thẻ kính, mạch xuyên suốt nối các buổi */
+:root{
+  --bg:#f8fafc; --ink:#0f172a; --text:#475569; --muted:#64748b;
+  --glass:rgba(255,255,255,.75); --glass-strong:rgba(255,255,255,.88); --line:rgba(255,255,255,.9); --hair:#e2e8f0;
+  --brand1:#4f46e5; --brand2:#2563eb; --brand3:#0ea5e9; --ok:#059669; --okbg:#d1fae5; --warn:#b45309; --warnbg:#fef3c7;
+  --chip:#eef2ff; --chipink:#3730a3; --glow:rgba(79,70,229,.18); --shadow:0 10px 30px rgba(15,23,42,.06);
+  --code:#f1f5f9;
+  --f-head:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1120; --ink:#f1f5f9; --text:#cbd5e1; --muted:#94a3b8;
+  --glass:rgba(30,41,59,.65); --glass-strong:rgba(30,41,59,.85); --line:rgba(148,163,184,.18); --hair:#1e293b;
+  --ok:#34d399; --okbg:rgba(16,185,129,.15); --warn:#fbbf24; --warnbg:rgba(251,191,36,.12);
+  --chip:rgba(99,102,241,.18); --chipink:#c7d2fe; --glow:rgba(99,102,241,.35); --shadow:0 10px 30px rgba(0,0,0,.35);
+  --code:#111827; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1120; --ink:#f1f5f9; --text:#cbd5e1; --muted:#94a3b8;
+  --glass:rgba(30,41,59,.65); --glass-strong:rgba(30,41,59,.85); --line:rgba(148,163,184,.18); --hair:#1e293b;
+  --ok:#34d399; --okbg:rgba(16,185,129,.15); --warn:#fbbf24; --warnbg:rgba(251,191,36,.12);
+  --chip:rgba(99,102,241,.18); --chipink:#c7d2fe; --glow:rgba(99,102,241,.35); --shadow:0 10px 30px rgba(0,0,0,.35);
+  --code:#111827; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:15.5px;line-height:1.7;
+  background-image:radial-gradient(800px 400px at 10% -5%,rgba(79,70,229,.10),transparent 60%),radial-gradient(700px 380px at 95% 5%,rgba(14,165,233,.10),transparent 60%);background-attachment:fixed}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3,h4{font-family:var(--f-head);color:var(--ink);text-wrap:balance;margin:0;line-height:1.25}
+h1{font-size:clamp(28px,5vw,44px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800}
+h3{font-size:19px;font-weight:800}
+h4{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+p{margin:0}
+a{color:var(--brand2)}
+.grad{background:linear-gradient(90deg,var(--brand1),var(--brand2),var(--brand3));-webkit-background-clip:text;background-clip:text;color:transparent}
+.glass{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);padding:24px}
+.lift{transition:transform .25s ease,box-shadow .25s ease}
+.lift:hover{transform:translateY(-3px);box-shadow:0 16px 40px var(--glow)}
+@media (prefers-reduced-motion:reduce){.lift{transition:none}.lift:hover{transform:none}}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--brand2)}
+.lead{font-size:17px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);color:var(--chipink);border-radius:50px;padding:4px 12px;font-size:13px;font-weight:600}
+.chip.ok{background:var(--okbg);color:var(--ok)}
+.chip.warn{background:var(--warnbg);color:var(--warn)}
+.hero{display:flex;flex-direction:column;gap:16px;padding:32px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.stat{background:var(--glass-strong);border:1px solid var(--line);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat .v{font-family:var(--f-head);font-size:26px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat .k{font-size:13.5px;font-weight:600;color:var(--ink)}
+.stat .s{font-size:12px;color:var(--muted)}
+.down{color:#dc2626}
+section{display:flex;flex-direction:column;gap:16px}
+.chain{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.node{flex:1 1 150px;min-width:0;background:var(--glass-strong);border:1px solid var(--line);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.node b{font-family:var(--f-head);color:var(--ink);font-size:14.5px}
+.node span{font-size:13px}
+.issues{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.issue{display:flex;flex-direction:column;gap:8px;min-width:0}
+.issue .tag{font-size:12px;font-weight:700;color:var(--brand1);letter-spacing:.05em;text-transform:uppercase}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px}
+.flow .step{background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff;border-radius:50px;padding:6px 14px;font-weight:600}
+.flow .arr{color:var(--muted)}
+.session{display:flex;flex-direction:column;gap:18px}
+.s-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.s-id{font-family:var(--f-head);font-weight:800;font-size:15px;color:#fff;background:linear-gradient(135deg,var(--brand1),var(--brand2),var(--brand3));border-radius:50px;padding:6px 16px}
+.s-title{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px}
+.cols>div{min-width:0;display:flex;flex-direction:column;gap:8px}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.ctx{background:var(--okbg);border-radius:20px;padding:14px 16px;color:var(--ink);font-size:14.5px}
+.ctx strong{color:var(--ok)}
+.formula{font-family:var(--f-mono);font-size:13px;background:var(--code);border-radius:16px;padding:12px 14px;color:var(--ink);overflow-x:auto;white-space:pre;line-height:1.6}
+.ex{border:1px dashed var(--brand2);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.ex .res{font-variant-numeric:tabular-nums}
+.sub{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.subc{background:var(--glass-strong);border:1px solid var(--line);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.subc b{font-family:var(--f-head);color:var(--ink)}
+.tbl{overflow-x:auto;border-radius:20px;border:1px solid var(--hair)}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top}
+th{font-family:var(--f-head);color:var(--ink);font-size:13px;background:var(--glass-strong)}
+td.n{text-align:right;white-space:nowrap}
+.bar{height:10px;border-radius:50px;background:linear-gradient(90deg,var(--brand1),var(--brand3))}
+.bar.neg{background:#ef4444}
+.note{font-size:13px;color:var(--muted)}
+.src{font-size:13.5px}
+.src li{word-break:break-word}
+footer{font-size:13px;color:var(--muted);text-align:center}
+</style>
+
+<div class="wrap">
+
+<header class="glass hero">
+  <div class="eyebrow">Chuỗi Mentoring Supply Chain &amp; Finance · Phần VI</div>
+  <h1>Nafoods: <span class="grad">Costing, Demand Planning &amp; Warehouse</span> thực chiến</h1>
+  <p class="lead">Giáo án cho 9 buổi (B27 gồm 4 buổi, B28–B32 mỗi buổi 1 buổi), xây trên số liệu Nafoods Group (HOSE: NAF) đã công bố. Mỗi buổi có bối cảnh thật, khung công thức, bài tập Excel và câu hỏi để mentee mang về đối chiếu với số nội bộ.</p>
+  <div class="chips">
+    <span class="chip ok">Xanh = số public, có nguồn</span>
+    <span class="chip warn">Vàng = giả định luyện tập</span>
+    <span class="chip">File bài tập: Nafoods_PhanVI_BaiTap.xlsx</span>
+  </div>
+</header>
+
+<section>
+  <h2>Nafoods qua số liệu công bố</h2>
+  <div class="stats">
+    <div class="stat lift"><span class="k">Doanh thu thuần 2025</span><span class="v">2.063,7 tỷ</span><span class="s">+43,6% so với 1.437,7 tỷ (2024). Báo Nghệ An</span></div>
+    <div class="stat lift"><span class="k">Biên lợi nhuận gộp</span><span class="v">22,7% <span class="down" style="font-size:15px">▼</span></span><span class="s">28,2% năm 2024. ABS Research 06/2026</span></div>
+    <div class="stat lift"><span class="k">LNST 2025</span><span class="v">~145,8 tỷ</span><span class="s">6T/2026 đã đạt 140,6 tỷ (+96%)</span></div>
+    <div class="stat lift"><span class="k">Tồn kho cuối Q1/2026</span><span class="v">249,2 tỷ</span><span class="s">Thành phẩm 195 tỷ, +52,7% so với cuối 2025</span></div>
+    <div class="stat lift"><span class="k">Nợ ngắn hạn 2025</span><span class="v">~993 tỷ</span><span class="s">Nợ phải trả 1.529 / tổng TS 2.313 tỷ. VietnamFinance</span></div>
+    <div class="stat lift"><span class="k">Kế hoạch 2026</span><span class="v">3.000 tỷ</span><span class="s">LNST 200 tỷ; DT 6T/2026 đạt 1.167,5 tỷ (39%)</span></div>
+  </div>
+
+  <div class="glass">
+    <h4 style="margin-bottom:12px">Chuỗi giá trị Nafoods (theo nguồn công bố)</h4>
+    <div class="chain">
+      <div class="node lift"><b>Giống</b><span>Viện giống, mục tiêu giữ vị trí số 1 cây giống chanh leo</span></div>
+      <div class="node lift"><b>Vùng trồng</b><span>Liên kết nông dân, HTX ở Tây Nguyên, Nghệ An; đề xuất vùng mới tại Hà Tĩnh</span></div>
+      <div class="node lift"><b>Thu mua theo vụ</b><span>Đợt vụ đầu thường ~40% sản lượng năm; năm 2025 chỉ ~25%</span></div>
+      <div class="node lift"><b>Chế biến</b><span>Gia Lai (mở rộng lên 100.000 t quả/năm), Long An GĐ2, Nghệ An, Nasoco GĐ2</span></div>
+      <div class="node lift"><b>Kho lạnh</b><span>IQF, puree/NFC, cô đặc, sấy; tồn kho đệm cho trái vụ</span></div>
+      <div class="node lift"><b>Xuất khẩu</b><span>~78% doanh thu (2019–2022); châu Âu ~50% (9T/2025); hơn 70 nước</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>5 bài toán supply chain đọc được từ số public</h2>
+  <p class="lead">Đây là xương sống của Phần VI. Mỗi buổi giải một phần, buổi B32 gom lại thành dashboard.</p>
+  <div class="issues">
+    <div class="glass issue lift"><span class="tag">Giá vốn · B28, B30</span><h3>Biên gộp giảm 5,5 điểm %</h3><p>Doanh thu tăng 43,6% nhưng biên gộp từ 28,2% xuống 22,7%. BSC nêu hai nguyên nhân: giá nguyên liệu cao và tỷ trọng gia công lớn. 6T/2025 giá vốn tăng 52,9%, nhanh hơn doanh thu.</p></div>
+    <div class="glass issue lift"><span class="tag">Demand vs Supply · B27</span><h3>Cung theo mùa, cầu quanh năm</h3><p>Quả chanh leo dồn vào nửa cuối năm, khách châu Âu mua đều. Hệ quả là phải chế biến dồn và giữ tồn đệm. Thành phẩm Q1/2026 tăng 52,7%.</p></div>
+    <div class="glass issue lift"><span class="tag">Công suất · B29</span><h3>Mở rộng nhanh, rủi ro nhàn rỗi</h3><p>XDCB dở dang 177,7 tỷ (6/2026) cho Long An GĐ2 và Gia Lai GĐ4. Nếu vùng nguyên liệu không theo kịp, chi phí cố định không phân bổ được sẽ vào thẳng giá vốn.</p></div>
+    <div class="glass issue lift"><span class="tag">Tiền mặt · B31</span><h3>Đòn bẩy cao, vòng tiền dài</h3><p>Nợ ngắn hạn ~993 tỷ, hệ số thanh toán hiện hành ~1,14. DIO ước tính ~57 ngày. Mỗi ngày tồn kho giảm được giải phóng khoảng 4,4 tỷ tiền mặt.</p></div>
+    <div class="glass issue lift"><span class="tag">Kế hoạch · B27.4</span><h3>Mục tiêu 3.000 tỷ (+45%)</h3><p>Kế hoạch doanh thu cần khớp với quả ký hợp đồng, công suất và vốn lưu động. Đây là đề bài cho buổi Executive S&amp;OP.</p></div>
+    <div class="glass issue lift"><span class="tag">Mix sản phẩm · B29, B30</span><h3>Đa trái cây để lấp trái vụ</h3><p>9T/2025: chanh leo +47%, dứa +731%, mít sấy trên 300 tỷ. Năm 2024 mất mùa vải, xoài và chuối tăng hơn 60%. Mix vừa là rủi ro vừa là đòn bẩy công suất.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Mạch xuyên suốt 9 buổi</h2>
+  <div class="glass">
+    <div class="flow">
+      <span class="step">Dự báo bán (B27)</span><span class="arr">→</span>
+      <span class="step">Nhu cầu quả &amp; công suất (B27.3)</span><span class="arr">→</span>
+      <span class="step">Giá vốn/kg (B28)</span><span class="arr">→</span>
+      <span class="step">Phân bổ SXC (B29)</span><span class="arr">→</span>
+      <span class="step">Chênh lệch (B30)</span><span class="arr">→</span>
+      <span class="step">Tồn kho &amp; tiền (B31)</span><span class="arr">→</span>
+      <span class="step">Dashboard (B32)</span>
+    </div>
+    <p class="note" style="margin-top:12px">Đầu ra của buổi trước là dữ liệu đầu vào của buổi sau. Mentee giữ một file Excel duy nhất cho cả phần.</p>
+  </div>
+</section>
+
+<!-- B27 -->
+<article class="glass session">
+  <div class="s-head"><div class="s-title"><span class="s-id">B27</span><h2>Demand Planning (4 buổi)</h2></div><span class="chip">Sheet 2_B27_Demand</span></div>
+  <div class="ctx"><strong>Bối cảnh Nafoods:</strong> doanh thu 2025 vượt kế hoạch 4%, nhưng 6T/2026 mới đạt 39% kế hoạch doanh thu 3.000 tỷ. Công ty kỳ vọng Q3–Q4 là cao điểm. Năm 2025 đợt vụ đầu chỉ đạt ~25% thay vì ~40% thường lệ. Dự báo vì vậy phải gồm cả phía cung quả.</div>
+  <div class="sub">
+    <div class="subc lift"><b>B27.1 · Nền tảng S&amp;OP</b><span>Cây phân cấp nhu cầu: nhóm sản phẩm (puree/NFC, IQF, cô đặc, sấy, quả tươi, cây giống) × thị trường (EU, Mỹ, châu Á, nội địa) × loại hợp đồng (khung năm, spot). Lịch S&amp;OP 5 bước hằng tháng.</span></div>
+    <div class="subc lift"><b>B27.2 · Dự báo thống kê</b><span>Chỉ số mùa vụ, trung bình trượt, làm trơn hàm mũ. Đo MAPE, Bias, Forecast Value Added (FVA) để biết bước điều chỉnh của Sales có làm dự báo tốt hơn không.</span></div>
+    <div class="subc lift"><b>B27.3 · Kế hoạch theo ràng buộc cung</b><span>Quy đổi dự báo thành quả tươi theo định mức. Cân đối lũy kế quả cần và quả có theo tháng, tính tồn đầu năm cần giữ. Rough-cut capacity theo nhà máy.</span></div>
+    <div class="subc lift"><b>B27.4 · Executive S&amp;OP</b><span>Đối chiếu kịch bản 3.000 tỷ với quả ký hợp đồng, công suất và vốn lưu động. Ra 3 quyết định: chốt dự báo, chốt kế hoạch thu mua, chốt mức tồn đệm.</span></div>
+  </div>
+  <div class="cols">
+    <div><h4>Công thức chính</h4>
+<div class="formula">Seasonal index(t) = Bán tháng t / Bán bình quân tháng
+Dự báo(t) = Tổng năm trước × (1+g) / 12 × SI(t)
+MAPE = trung bình |F − A| / A
+Bias = (ΣF − ΣA) / ΣA
+Quả cần(t) = Dự báo(t) × định mức kg quả/kg TP
+Cân đối lũy kế(t) = Σ quả có − Σ quả cần</div></div>
+    <div class="ex"><h4>Bài tập thực chiến</h4>
+      <p>Dự báo puree chanh leo 2026 với tăng trưởng 12%, định mức 2,8 kg quả/kg, 50.000 t quả ký hợp đồng, phân bổ theo mùa vụ Tây Nguyên.</p>
+      <p class="res">Kết quả mẫu: MAPE 6 tháng 5,8%; Bias −2,5% (dự báo thấp hơn thực tế). Cần giữ <b>~8.750 t quả quy đổi</b> làm tồn đầu năm vì quả T1–T5 không đủ cho nhu cầu bán.</p>
+      <span class="chip warn">Số bán hàng là giả định</span>
+    </div>
+  </div>
+  <div class="cols">
+    <div><h4>Câu hỏi mentor</h4><ul>
+      <li>Ở Nafoods, ai đang nắm số dự báo: Sales xuất khẩu, kế hoạch hay nhà máy? Có một con số chung không?</li>
+      <li>Nếu đợt vụ đầu 2027 lại chỉ đạt 25%, kế hoạch thu mua và giá thu mua thay đổi thế nào?</li>
+      <li>Khoảng cách giữa 1.167,5 tỷ (6T/2026) và 3.000 tỷ được lấp bằng sản phẩm nào, thị trường nào?</li>
+    </ul></div>
+    <div><h4>Đầu ra của mentee</h4><ul>
+      <li>Bảng dự báo 12 tháng theo nhóm sản phẩm, có MAPE và Bias</li>
+      <li>Bảng cân đối quả cần và quả có, có mức tồn đệm</li>
+      <li>Biên bản S&amp;OP mẫu với 3 quyết định và người chịu trách nhiệm</li>
+    </ul></div>
+  </div>
+</article>
+
+<!-- B28 -->
+<article class="glass session">
+  <div class="s-head"><div class="s-title"><span class="s-id">B28</span><h2>Sản xuất &amp; bóc tách giá vốn (COGS)</h2></div><span class="chip">Sheet 3_B28_COGS</span></div>
+  <div class="ctx"><strong>Bối cảnh Nafoods:</strong> giá vốn 2025 ước 1.594,7 tỷ (doanh thu trừ lợi nhuận gộp 469 tỷ). BSC đánh giá kỳ vọng biên gộp 2026 hồi về ~26% nhờ tự chủ sản xuất mít sấy và giá vốn chanh leo giảm. Dự án Nasoco GĐ2 khởi công từ 8/2025 để mở rộng công suất.</div>
+  <div class="cols">
+    <div><h4>Khung bóc tách / kg thành phẩm</h4><ul>
+      <li><b>NVL chính</b> = giá quả × định mức. Thường chiếm 70–80% giá vốn puree</li>
+      <li><b>Bao bì</b>: túi aseptic, phuy, thùng carton, túi zip</li>
+      <li><b>Nhân công trực tiếp</b> và <b>năng lượng</b> (hơi, điện, lạnh, dầu chiên)</li>
+      <li><b>SXC cố định</b>: khấu hao, bảo trì, quản lý xưởng. Phân bổ theo B29</li>
+      <li><b>Hao hụt / QA reject</b>, trừ đi <b>phụ phẩm</b> (vỏ, hạt chanh leo) nếu bán được</li>
+    </ul></div>
+    <div><h4>Công thức chính</h4>
+<div class="formula">Giá vốn/kg = NVL + Bao bì + NC + Năng lượng
+            + SXC phân bổ + Hao hụt − Phụ phẩm
+Độ nhạy giá quả: ΔGV/kg = Δgiá quả × định mức
+Make-vs-Buy: (GV gia công − GV tự SX) × sản lượng</div></div>
+  </div>
+  <div class="ex"><h4>Bài tập thực chiến</h4>
+    <div class="tbl"><table>
+      <tr><th>VND/kg thành phẩm</th><th>Puree chanh leo</th><th>Mít sấy tự SX</th><th>Mít sấy gia công</th></tr>
+      <tr><td>Giá vốn</td><td class="n">33.814</td><td class="n">101.670</td><td class="n">134.000</td></tr>
+      <tr><td>Giá bán FOB</td><td class="n">44.000</td><td class="n">180.000</td><td class="n">180.000</td></tr>
+      <tr><td>Biên gộp</td><td class="n">23,2%</td><td class="n">43,5%</td><td class="n">25,6%</td></tr>
+    </table></div>
+    <p class="res">Giá quả chanh leo tăng 1.000 VND/kg làm giá vốn puree tăng 2.800 VND/kg. Chuyển 1.000 t mít sấy từ gia công về tự sản xuất tăng thêm <b>~32 tỷ lãi gộp</b>.</p>
+    <span class="chip warn">Toàn bộ đơn giá là giả định</span>
+  </div>
+  <div class="cols">
+    <div><h4>Câu hỏi mentor</h4><ul>
+      <li>Định mức kg quả/kg puree thực tế theo từng vụ và từng vùng là bao nhiêu? Ai ký duyệt định mức?</li>
+      <li>Vỏ và hạt chanh leo đang được hạch toán thế nào: bán phụ phẩm, ghi giảm giá vốn hay bỏ?</li>
+      <li>Khi Nasoco GĐ2 chạy, sản lượng mít sấy nào nên giữ ở gia công để làm vùng đệm?</li>
+    </ul></div>
+    <div><h4>Đầu ra của mentee</h4><ul>
+      <li>Thẻ giá thành chuẩn (standard cost card) cho 3 SKU chủ lực</li>
+      <li>Bảng độ nhạy giá quả và định mức</li>
+      <li>Phân tích make-vs-buy mít sấy có số liệu nội bộ</li>
+    </ul></div>
+  </div>
+</article>
+
+<!-- B29 -->
+<article class="glass session">
+  <div class="s-head"><div class="s-title"><span class="s-id">B29</span><h2>Phân bổ chi phí chung &amp; năng lực nhàn rỗi</h2></div><span class="chip">Sheet 4_B29_Overhead</span></div>
+  <div class="ctx"><strong>Bối cảnh Nafoods:</strong> Nafoods Tây Nguyên mở rộng lên 100.000 t nguyên liệu/năm (tổng vốn 744 tỷ). Long An GĐ2 và Gia Lai GĐ4 đang dở dang. Chanh leo dồn vào T6–T12, nên dứa, mít, xoài, chuối là cách lấp công suất trái vụ.</div>
+  <div class="cols">
+    <div><h4>Nguyên tắc kế toán</h4><ul>
+      <li>VAS 02 (Hàng tồn kho): SXC cố định phân bổ vào sản phẩm theo <b>công suất bình thường</b></li>
+      <li>Phần không phân bổ hết khi sản xuất thấp hơn công suất bình thường được ghi vào giá vốn trong kỳ, không treo vào tồn kho</li>
+      <li>Với nhiều dây chuyền (puree, IQF, sấy), dùng tiêu thức theo hoạt động: giờ máy, kWh, giờ kho lạnh</li>
+    </ul></div>
+    <div><h4>Công thức chính</h4>
+<div class="formula">Đơn giá SXC chuẩn = SXC cố định năm
+                 / (Công suất thiết kế × % bình thường)
+SXC phân bổ = Sản lượng thực tế × Đơn giá chuẩn
+Chi phí nhàn rỗi = SXC phát sinh − SXC phân bổ  (nếu > 0)</div></div>
+  </div>
+  <div class="ex"><h4>Bài tập thực chiến</h4>
+    <p>SXC cố định 72 tỷ/năm, công suất bình thường 75% của 100.000 t, đơn giá chuẩn 960.000 VND/t quả.</p>
+    <div class="tbl"><table>
+      <tr><th>Kịch bản</th><th>Sản lượng (t)</th><th>Hiệu suất</th><th>Chi phí nhàn rỗi</th><th style="width:30%"></th></tr>
+      <tr><td>Đa trái cây</td><td class="n">63.500</td><td class="n">63,5%</td><td class="n">11,0 tỷ</td><td><div class="bar neg" style="width:33%"></div></td></tr>
+      <tr><td>Chỉ chanh leo</td><td class="n">40.000</td><td class="n">40,0%</td><td class="n">33,6 tỷ</td><td><div class="bar neg" style="width:100%"></div></td></tr>
+    </table></div>
+    <span class="chip warn">Chi phí SXC và sản lượng theo tháng là giả định; công suất 100.000 t là số public</span>
+  </div>
+  <div class="cols">
+    <div><h4>Câu hỏi mentor</h4><ul>
+      <li>Nafoods đang định nghĩa công suất bình thường bằng bao nhiêu %? Có tách theo dây chuyền không?</li>
+      <li>Tháng nào nên nhận gia công cho khách ngoài để lấp công suất?</li>
+      <li>Nhà máy mới chạy GĐ đầu: khấu hao có làm méo giá vốn/kg so với nhà máy cũ không?</li>
+    </ul></div>
+    <div><h4>Đầu ra của mentee</h4><ul>
+      <li>Lịch công suất 12 tháng theo trái cây và nhà máy</li>
+      <li>Bảng tách chi phí nhàn rỗi khỏi giá thành</li>
+      <li>Đề xuất lấp công suất trái vụ, có số tiền tiết kiệm</li>
+    </ul></div>
+  </div>
+</article>
+
+<!-- B30 -->
+<article class="glass session">
+  <div class="s-head"><div class="s-title"><span class="s-id">B30</span><h2>Variance Analysis (phân tích chênh lệch)</h2></div><span class="chip">Sheet 5_B30_Variance</span></div>
+  <div class="ctx"><strong>Bối cảnh Nafoods:</strong> 6T/2025 biên gộp 22,3% so với 30,4% cùng kỳ. Cả năm 2025 là 22,7% so với 28,2%. Bài tập mô phỏng đúng biên độ này để mentee tách xem phần nào do giá bán, giá quả, hiệu suất, mix và sản lượng.</div>
+  <div class="cols">
+    <div><h4>Công thức chính</h4>
+<div class="formula">CL giá bán  = (Giá TT − Giá KH) × SL TT
+CL giá vốn  = (GV KH − GV TT) × SL TT
+CL mix      = (SL TT − ΣSL TT × Mix KH) × LN/đv KH
+CL lượng    = (ΣSL TT × Mix KH − SL KH) × LN/đv KH
+CL giá NVL  = (Giá chuẩn − Giá TT) × Lượng quả TT
+CL yield    = (Lượng chuẩn − Lượng TT) × Giá chuẩn</div></div>
+    <div><h4>Cầu nối lợi nhuận gộp (triệu VND)</h4>
+      <div class="tbl"><table>
+        <tr><th>Yếu tố</th><th>Chênh lệch</th><th>Chủ sở hữu</th></tr>
+        <tr><td>Sản lượng</td><td class="n" style="color:var(--ok)">+15.657</td><td>Sales, Kế hoạch</td></tr>
+        <tr><td>Mix</td><td class="n" style="color:var(--ok)">+843</td><td>Sales, S&amp;OP</td></tr>
+        <tr><td>Giá bán</td><td class="n down">−6.100</td><td>Sales</td></tr>
+        <tr><td>Giá vốn</td><td class="n down">−33.600</td><td>Thu mua, Sản xuất</td></tr>
+        <tr><td>&nbsp;&nbsp;trong đó giá quả (puree)</td><td class="n down">−23.760</td><td>Thu mua</td></tr>
+        <tr><td>&nbsp;&nbsp;trong đó yield (puree)</td><td class="n down">−11.880</td><td>Sản xuất, QA</td></tr>
+      </table></div>
+      <p class="note">Biên gộp KH 29,8% → TT 23,2%. Ô kiểm tra trong file bằng 0.</p>
+    </div>
+  </div>
+  <div class="cols">
+    <div><h4>Câu hỏi mentor</h4><ul>
+      <li>Ở Nafoods, chênh lệch nào đang được giải trình hằng tháng, chênh lệch nào bị gộp vào "giá vốn tăng"?</li>
+      <li>Mít sấy gia công làm doanh thu tăng nhưng kéo biên gộp. Đó là chênh lệch mix hay chênh lệch giá vốn?</li>
+      <li>Ngưỡng nào thì một chênh lệch phải có kế hoạch hành động?</li>
+    </ul></div>
+    <div><h4>Đầu ra của mentee</h4><ul>
+      <li>Biểu đồ cầu nối biên gộp kỳ gần nhất với số nội bộ</li>
+      <li>Ma trận chênh lệch và người chịu trách nhiệm</li>
+      <li>3 hành động cho 3 chênh lệch bất lợi lớn nhất</li>
+    </ul></div>
+  </div>
+</article>
+
+<!-- B31 -->
+<article class="glass session">
+  <div class="s-head"><div class="s-title"><span class="s-id">B31</span><h2>Warehouse Opex &amp; Inventory-to-Cash (I2C)</h2></div><span class="chip">Sheet 6_B31_I2C</span></div>
+  <div class="ctx"><strong>Bối cảnh Nafoods:</strong> tồn kho cuối Q1/2026 249,2 tỷ, trong đó thành phẩm 195 tỷ (+52,7% so với cuối 2025). Nợ ngắn hạn ~993 tỷ. Hàng đông lạnh đi container lạnh sang châu Âu khoảng 30–40 ngày, nên vòng tiền dài hơn hàng nội địa.</div>
+  <div class="cols">
+    <div><h4>Công thức chính</h4>
+<div class="formula">DIO = Tồn kho / Giá vốn × 365
+CCC = DIO + DSO − DPO
+Chi phí nắm giữ = Giá trị tồn × (vốn + kho + hao hụt + bảo hiểm)
+Tiền giải phóng = Giá vốn / 365 × số ngày DIO giảm
+Chi phí kho lạnh = pallet × đơn giá/ngày × 365</div></div>
+    <div class="ex"><h4>Bài tập thực chiến</h4><ul class="res">
+      <li>DIO ước tính <b>~57 ngày</b> (249,2 tỷ / 1.594,7 tỷ × 365)</li>
+      <li>CCC ~72 ngày nếu DSO 60, DPO 45 (giả định)</li>
+      <li>Chi phí nắm giữ 195 tỷ thành phẩm ở mức 14,5%/năm: <b>~28 tỷ/năm</b></li>
+      <li>Giảm 10 ngày DIO giải phóng <b>~44 tỷ</b> tiền mặt</li>
+      <li>Thuê kho lạnh −18°C cho 4.000 t bình quân: ~41 tỷ/năm, ~2.000 VND/kg xuất</li>
+    </ul><span class="chip warn">DSO, DPO, tỷ lệ chi phí, đơn giá kho là giả định</span></div>
+  </div>
+  <div class="ctx" style="background:var(--chip);color:var(--ink)"><strong style="color:var(--chipink)">Đánh đổi B29 và B31:</strong> chế biến dồn trong vụ giúp giảm chi phí nhàn rỗi nhưng làm tăng tồn kho và chi phí kho lạnh. Bài tập yêu cầu mentee tìm mức tồn đệm mà tổng hai chi phí là thấp nhất.</div>
+  <div class="cols">
+    <div><h4>Câu hỏi mentor</h4><ul>
+      <li>Vẽ chuỗi I2C của 1 lô puree: từ ngày quả vào cổng đến ngày tiền về. Bước nào dài nhất?</li>
+      <li>Bao nhiêu % thành phẩm đã có đơn hàng (allocated) và bao nhiêu % là tồn chờ bán?</li>
+      <li>Kho lạnh tự có hay đi thuê rẻ hơn ở mức lấp đầy hiện tại?</li>
+    </ul></div>
+    <div><h4>Đầu ra của mentee</h4><ul>
+      <li>Bản đồ I2C có số ngày từng bước</li>
+      <li>Báo cáo tuổi tồn kho và chính sách FEFO theo hạn dùng từng SKU</li>
+      <li>Mục tiêu DIO theo nhóm hàng và số tiền giải phóng</li>
+    </ul></div>
+  </div>
+</article>
+
+<!-- B32 -->
+<article class="glass session">
+  <div class="s-head"><div class="s-title"><span class="s-id">B32</span><h2>Dashboard Costing &amp; Inventory</h2></div><span class="chip">Sheet 7_B32_KPI</span></div>
+  <div class="ctx"><strong>Buổi tổng kết:</strong> mentee nối đầu ra của B27–B31 thành một dashboard và trình bày 3 sáng kiến, mỗi sáng kiến có giá trị bằng tỷ VND.</div>
+  <div class="sub">
+    <div class="subc lift"><b>Trang 1 · Điều hành</b><span>Cầu nối biên gộp, giá vốn/kg theo SKU, DIO, CCC, so với kế hoạch 3.000 tỷ</span></div>
+    <div class="subc lift"><b>Trang 2 · Cung cầu</b><span>Forecast accuracy, Bias, độ phủ quả ký hợp đồng, giá quả bình quân theo vùng</span></div>
+    <div class="subc lift"><b>Trang 3 · Nhà máy</b><span>Yield theo ca, hiệu suất công suất, chi phí nhàn rỗi theo nhà máy</span></div>
+    <div class="subc lift"><b>Trang 4 · Tồn kho</b><span>Tuổi tồn kho, lấp đầy kho lạnh, I2C, OTIF xuất khẩu</span></div>
+  </div>
+  <div class="cols">
+    <div><h4>Mô hình dữ liệu gợi ý</h4>
+<div class="formula">Fact: fact_sales, fact_production,
+      fact_fruit_purchase, fact_inventory_snapshot
+Dim : dim_sku, dim_plant, dim_customer,
+      dim_region (vùng trồng), dim_date
+Công cụ: Excel + Power Query → Power BI</div></div>
+    <div><h4>Tiêu chí chấm</h4><ul>
+      <li>Mỗi KPI có định nghĩa, công thức, nguồn, chủ sở hữu (theo sheet 7)</li>
+      <li>Số trên dashboard khớp với BCTC và file B27–B31</li>
+      <li>Mỗi trang dẫn đến một quyết định cụ thể</li>
+      <li>3 sáng kiến có giá trị tiền và người chịu trách nhiệm</li>
+    </ul></div>
+  </div>
+</article>
+
+<section>
+  <h2>Dữ liệu cần xin nội bộ Nafoods</h2>
+  <div class="glass tbl" style="padding:0">
+    <table>
+      <tr><th>Buổi</th><th>Dữ liệu</th><th>Bộ phận</th></tr>
+      <tr><td>B27</td><td>Doanh số 24–36 tháng theo SKU, khách, thị trường; hợp đồng khung; sản lượng quả ký kết theo vùng, theo tháng</td><td>Sales XK, Kế hoạch, Thu mua</td></tr>
+      <tr><td>B28</td><td>Định mức NVL, bao bì; giá quả theo ngày; thẻ giá thành ERP; hợp đồng gia công mít sấy</td><td>Kế toán giá thành, Sản xuất</td></tr>
+      <tr><td>B29</td><td>SXC cố định theo nhà máy; công suất thiết kế theo dây chuyền; sản lượng theo tháng</td><td>Kế toán, Nhà máy</td></tr>
+      <tr><td>B30</td><td>Kế hoạch và thực tế theo SKU: lượng, giá, giá vốn; lượng quả thực dùng</td><td>FP&amp;A, Sản xuất</td></tr>
+      <tr><td>B31</td><td>Tồn kho theo lô, tuổi, kho; chi phí kho lạnh; công nợ phải thu, phải trả; lịch tàu</td><td>Kho, Logistics, Kế toán công nợ</td></tr>
+      <tr><td>B32</td><td>Quyền truy cập ERP, WMS hoặc bản xuất dữ liệu định kỳ</td><td>IT, CFO</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Nguồn thông tin public đã dùng</h2>
+  <div class="glass src">
+    <ul>
+      <li><a href="https://baonghean.vn/en/nafoods-dat-muc-tieu-doanh-thu-nam-2026-dat-3-000-ty-dong-10335852.html" target="_blank" rel="noopener">Báo Nghệ An: Nafoods đặt mục tiêu doanh thu 2026 đạt 3.000 tỷ</a></li>
+      <li><a href="https://baodautu.vn/nafoods-group-loi-nhuan-nua-dau-nam-tang-96-hoan-thanh-70-ke-hoach-nam-chi-sau-hai-quy-d658699.html" target="_blank" rel="noopener">Báo Đầu tư: lợi nhuận nửa đầu 2026 tăng 96%</a></li>
+      <li><a href="https://www.abs.vn/wp-content/uploads/2026/06/NAF_260626_Note.pdf" target="_blank" rel="noopener">ABS Research: NAF note 26/06/2026</a></li>
+      <li><a href="https://vietnamfinance.vn/nafoods-group-mo-rong-dau-tu-giua-luc-no-vay-phinh-to-d141980.html" target="_blank" rel="noopener">VietnamFinance: Nafoods mở rộng đầu tư giữa lúc nợ vay phình to</a></li>
+      <li><a href="https://elibook.vn/2025/10/20/naf-tang-truong-loi-nhuan-gap-10-lan-va-trien-vong-cai-thien-bien-loi-nhuan-nam-2026/" target="_blank" rel="noopener">Tổng hợp báo cáo BSC: NAF 9T/2025 và triển vọng biên lợi nhuận 2026</a></li>
+      <li><a href="https://doanhnhan.baophapluat.vn/nafoods-group-naf-lai-quy-iv2024-tang-manh-85-loi-nhuan-ca-nam-dat-ky-luc-80604.html" target="_blank" rel="noopener">Báo Pháp luật: kết quả Q4 và cả năm 2024</a></li>
+      <li><a href="https://doanhnhan.baophapluat.vn/nafoods-group-naf-dat-muc-tieu-lai-135-ty-nam-2025-chia-co-tuc-bang-co-phieu-ty-le-10-tiep-tuc-ke-hoach-phat-hanh-rieng-le-82234.html" target="_blank" rel="noopener">Báo Pháp luật: kế hoạch 2025</a></li>
+      <li><a href="https://baodautu.vn/vua-chanh-leo-nafoods-tang-von-mo-rong-nha-may-xuat-khau-trai-cay-tai-gia-lai-d457349.html" target="_blank" rel="noopener">Báo Đầu tư: Nafoods tăng vốn mở rộng nhà máy Gia Lai</a></li>
+      <li><a href="https://www.vcci.com.vn/tin-tuc/doanh-thu-va-loi-nhuan-dat-ky-luc-moi-nafoods-group-khoi-cong-xay-dung-du-an-nasoco-giai-doan-2" target="_blank" rel="noopener">VCCI: doanh thu kỷ lục, khởi công Nasoco GĐ2</a></li>
+      <li><a href="https://iq.vietcap.com.vn/report-detail/en/naf-non-rated-promising-growth-prospects-for-fruit-vegetable-exports-visit-note" target="_blank" rel="noopener">Vietcap: NAF visit note</a></li>
+      <li><a href="https://disclosures.ifc.org/project-detail/SII/41576/nafoods-group" target="_blank" rel="noopener">IFC disclosure: Nafoods Group</a></li>
+      <li><a href="https://cropgpt.ai/passion-fruit-market-report-2025-first-quarter-results-and-mid-year-forecast" target="_blank" rel="noopener">Passion fruit market report Q1/2025 (mùa vụ)</a></li>
+      <li><a href="https://tapchicongthuong.vn/chiem-10--san-luong-xuat-khau-toan-cau---vua-chanh-leo--nafoods-group--naf--don-tin-vui-tu-my-126056.htm" target="_blank" rel="noopener">Tạp chí Công Thương: Nafoods chiếm ~10% xuất khẩu chanh leo toàn cầu</a></li>
+      <li><a href="https://simplize.vn/co-phieu/NAF/so-lieu-tai-chinh" target="_blank" rel="noopener">Simplize: số liệu tài chính NAF</a></li>
+    </ul>
+    <p class="note" style="margin-top:12px">Số liệu lấy từ báo chí và báo cáo công ty chứng khoán, chưa đối chiếu từng dòng với BCTC kiểm toán. Công suất theo dây chuyền (IQF 12.500 t, cô đặc 17.000 t, puree/NFC 10.000 t, sấy 700 t) là số cũ trên hồ sơ doanh nghiệp. Cần đối chiếu báo cáo thường niên 2025 trước khi trình bày ra ngoài.</p>
+  </div>
+</section>
+
+<footer>Tài liệu mentoring nội bộ · Cập nhật 10/2026</footer>
+</div>
