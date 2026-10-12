@@ -7,46 +7,41 @@ export function hasAnswer(answers: AnswerMap, id: string): boolean {
 }
 
 /**
- * Chấm điểm từng nhóm: n = số câu đã chấm 1–5, mean = total / n, score = 25 × (mean − 1).
- * N/A (null) không được tính và không bị thay bằng 3. Không đảo điểm.
- * n = 0 → mean và score là null (không chia cho 0).
- * Đầu vào phải đã được kiểm tra; giá trị không hợp lệ sẽ gây lỗi thay vì bị bỏ qua âm thầm.
+ * Chấm 24 câu DISC (scored = true). 6 câu bổ sung không được cộng vào bất kỳ nhóm nào.
+ * Từng nhóm: n = số câu 1–5 (N/A và câu chưa trả lời không tính, không thay bằng 3),
+ * mean = total / n, score = 25 × (mean − 1). n = 0 → null.
  */
 export function scoreAnswers(answers: AnswerMap, questions: readonly Question[] = QUESTIONS): ScoreSummary {
-  const acc = Object.fromEntries(
-    DIMENSIONS.map((d) => [d, { n: 0, total: 0, itemCount: 0 }]),
-  ) as Record<Dimension, { n: number; total: number; itemCount: number }>;
-  let answered = 0;
-  let naCount = 0;
-  let unanswered = 0;
+  const acc = Object.fromEntries(DIMENSIONS.map((d) => [d, { n: 0, total: 0, itemCount: 0 }])) as Record<
+    Dimension,
+    { n: number; total: number; itemCount: number }
+  >;
+  let nDisc = 0;
+  let discCount = 0;
 
   for (const q of questions) {
+    if (!q.scored || !q.dimension) continue;
+    discCount += 1;
     const bucket = acc[q.dimension];
     bucket.itemCount += 1;
-    if (!hasAnswer(answers, q.id)) {
-      unanswered += 1;
-      continue;
-    }
+    if (!hasAnswer(answers, q.id)) continue;
     const value = answers[q.id];
     if (!isAnswerValue(value)) throw new Error(`Giá trị không hợp lệ cho ${q.id}`);
-    if (value === null) {
-      naCount += 1;
-      continue;
-    }
+    if (value === null) continue;
     bucket.n += 1;
     bucket.total += value;
-    answered += 1;
+    nDisc += 1;
   }
 
   const dimensions = Object.fromEntries(
     DIMENSIONS.map((d): [Dimension, DimensionScore] => {
       const { n, total, itemCount } = acc[d];
-      const mean = n === 0 ? null : total / n;
-      // 25 × (total − n) / n: một phép chia duy nhất để giảm sai số làm tròn.
-      const score = n === 0 ? null : (25 * (total - n)) / n;
-      return [d, { dimension: d, n, itemCount, total, mean, score }];
+      return [
+        d,
+        { dimension: d, n, itemCount, total, mean: n === 0 ? null : total / n, score: n === 0 ? null : (25 * (total - n)) / n },
+      ];
     }),
   ) as Record<Dimension, DimensionScore>;
 
-  return { dimensions, answered, naCount, unanswered, questionCount: questions.length };
+  return { dimensions, nDisc, discCount };
 }

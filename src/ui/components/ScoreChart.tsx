@@ -1,5 +1,5 @@
 import { formatScore } from '../../domain/interpretation';
-import { DIMENSION_LABEL, PROFILES } from '../../domain/questionnaire';
+import { DIMENSION_LABEL, DIMENSION_NAME } from '../../domain/questionnaire';
 import { DIMENSIONS, type ScoreSummary } from '../../domain/types';
 
 /** Bốn thanh ngang có nhãn số + bảng văn bản tương đương. Không dùng pie chart vì điểm không cộng thành 100. */
@@ -14,7 +14,7 @@ export function ScoreChart({ summary }: { summary: ScoreSummary }) {
             <div className="bar-row" key={d}>
               <span className="bar-label">
                 <strong>{d}</strong>
-                <span className="muted small">{PROFILES[d].name}</span>
+                <span className="muted small">{DIMENSION_NAME[d]}</span>
               </span>
               <span className="bar-track">
                 <span className="bar-fill" style={{ width: `${width}%` }} />

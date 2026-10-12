@@ -10,35 +10,26 @@ export type AnswerMap = Partial<Record<string, AnswerValue>>;
 
 export interface Question {
   id: string;
-  dimension: Dimension;
+  /** null với 6 câu bổ sung (leadership / làm việc nhóm) */
+  dimension: Dimension | null;
+  section: string;
+  /** chỉ 24 câu DISC được chấm */
+  scored: boolean;
   text: string;
-  tag: string;
-  action: string;
-  reverse: false;
-}
-
-export interface Profile {
-  name: string;
-  strength: string;
-  risk: string;
-  need: string;
-  question: string;
-  action: string;
 }
 
 export interface ScoringRules {
+  itemsPerDimension: number;
   minAnsweredPerDimension: number;
-  minAnsweredTotal: number;
+  minAnsweredDiscTotal: number;
   closeDelta: number;
   flatRange: number;
-  tieDelta: number;
 }
 
 export interface DimensionScore {
   dimension: Dimension;
-  /** số câu đã chấm 1–5 (không tính N/A) */
+  /** số câu DISC đã chấm 1–5 (không tính N/A) */
   n: number;
-  /** số câu của nhóm trong bộ câu hỏi */
   itemCount: number;
   total: number;
   /** null khi n = 0 (không chia cho 0) */
@@ -49,24 +40,24 @@ export interface DimensionScore {
 
 export interface ScoreSummary {
   dimensions: Record<Dimension, DimensionScore>;
-  answered: number;
-  naCount: number;
-  unanswered: number;
-  questionCount: number;
+  /** số câu DISC có điểm */
+  nDisc: number;
+  discCount: number;
 }
 
-export type InterpretationStatus = 'insufficient' | 'flat' | 'clearer' | 'close_pair' | 'multiple';
+/** complete: 24/24 câu DISC có điểm; partial: 20–23 và đủ từng nhóm; insufficient: còn lại. */
+export type DataStatus = 'complete' | 'partial' | 'insufficient';
+export type PatternStatus = 'insufficient' | 'flat' | 'clearer' | 'close_pair' | 'multiple';
 
 export interface Interpretation {
-  status: InterpretationStatus;
-  /** đủ điều kiện nhưng chưa trả lời đủ toàn bộ câu: kết quả tạm thời */
-  partial: boolean;
+  dataStatus: DataStatus;
+  pattern: PatternStatus;
   /** các nhóm cách điểm cao nhất ≤ closeDelta (rỗng khi insufficient hoặc flat) */
   candidates: Dimension[];
-  /** các nhóm bằng điểm cao nhất (trong candidates) */
+  /** các nhóm bằng điểm cao nhất */
   topTied: Dimension[];
   range: number | null;
+  /** mọi câu DISC có điểm cùng một giá trị */
   reviewSuggested: boolean;
-  /** các nhóm chưa đủ số câu tối thiểu */
   missingDimensions: Dimension[];
 }

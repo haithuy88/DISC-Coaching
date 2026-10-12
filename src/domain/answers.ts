@@ -69,17 +69,6 @@ export function validateAnswerEntries(input: unknown): AnswerValidation {
   return { ok: true, answers };
 }
 
-/** Kiểm tra map đáp án trong bộ nhớ (ví dụ khôi phục từ localStorage). */
-export function validateAnswerMap(input: unknown): AnswerValidation {
-  if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-    return { ok: false, errors: ['Đáp án phải là đối tượng.'] };
-  }
-  if (hasDangerousKeys(input)) return { ok: false, errors: ['Dữ liệu chứa trường không được phép.'] };
-  return validateAnswerEntries(
-    Object.entries(input as Record<string, unknown>).map(([id, value]) => ({ id, value })),
-  );
-}
-
 export function toAnswerEntries(answers: AnswerMap, order: readonly string[]): AnswerEntry[] {
   return order.filter((id) => id in answers).map((id) => ({ id, value: answers[id] as AnswerValue }));
 }

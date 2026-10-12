@@ -759,3 +759,19 @@ details.card > summary {
     flex: 0 1 auto;
   }
 }
+
+.required {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+.score-table .wrap {
+  white-space: normal;
+  font-weight: 400;
+}
+.score-table th.wrap {
+  color: var(--text-strong);
+}

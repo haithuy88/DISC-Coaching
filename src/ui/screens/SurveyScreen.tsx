@@ -26,8 +26,8 @@ export function SurveyProgress({ api }: { api: AppApi }) {
         <span style={{ width: `${(answeredAny / QUESTIONS.length) * 100}%` }} />
       </div>
       <p className="small">
-        Có điểm: <strong data-testid="count-scored">{scored}</strong>/{QUESTIONS.length} · N/A:{' '}
-        <strong data-testid="count-na">{na}</strong> · Chưa trả lời: <strong>{QUESTIONS.length - answeredAny}</strong>
+        Đã chọn: <strong data-testid="count-answered">{answeredAny}</strong>/{QUESTIONS.length} · Trong đó N/A:{' '}
+        <strong data-testid="count-na">{na}</strong> · Chưa chọn: <strong data-testid="count-missing">{QUESTIONS.length - answeredAny}</strong>
       </p>
     </div>
   );
@@ -135,7 +135,7 @@ export function SurveyScreen({ api }: { api: AppApi }) {
 
   function goPage(next: number) {
     if (next < 0) {
-      api.go('context');
+      api.go('identify');
       return;
     }
     if (next >= PAGE_COUNT) {
@@ -158,8 +158,8 @@ export function SurveyScreen({ api }: { api: AppApi }) {
     <section className="stack">
       <ScreenTitle eyebrow={`Trang ${page + 1}/${PAGE_COUNT}`}>Mức độ giống bạn</ScreenTitle>
       <p className="muted">
-        Nghĩ về hành vi thường gặp trong 3 tháng gần đây. Chọn 1 (hầu như không giống) đến 5 (rất giống), hoặc N/A nếu
-        chưa có trải nghiệm. Dùng phím mũi tên để đổi lựa chọn trong một câu.
+        Nghĩ về hành vi thường gặp trong công việc 3 tháng gần đây. Chọn 1 (hầu như không giống) đến 5 (rất giống), hoặc
+        N/A nếu chưa có trải nghiệm. Dùng phím mũi tên để đổi lựa chọn trong một câu.
       </p>
       <SurveyProgress api={api} />
       <h2 className="sr-only" tabIndex={-1} ref={headingRef}>
@@ -174,7 +174,7 @@ export function SurveyScreen({ api }: { api: AppApi }) {
               {missing.map((q) => `câu ${QUESTIONS.indexOf(q) + 1}`).join(', ')}.
             </strong>
           </p>
-          <p>Bạn có thể chọn N/A nếu chưa có trải nghiệm, hoặc bỏ qua và quay lại ở bước rà soát.</p>
+          <p>Cần chọn đủ 30 câu trước khi gửi. Bạn có thể chọn N/A nếu chưa có trải nghiệm, hoặc quay lại ở bước rà soát.</p>
           <button type="button" className="btn btn-ghost btn-small" onClick={() => goPage(page + 1)}>
             Bỏ qua, sang {page + 1 >= PAGE_COUNT ? 'bước rà soát' : 'trang sau'}
           </button>
@@ -195,10 +195,10 @@ export function SurveyScreen({ api }: { api: AppApi }) {
 
       <Actions>
         <button type="button" className="btn btn-ghost" onClick={() => goPage(page - 1)}>
-          {page === 0 ? 'Quay lại bối cảnh' : 'Trang trước'}
+          {page === 0 ? 'Quay lại thông tin' : 'Trang trước'}
         </button>
         <button type="button" className="btn btn-primary" onClick={onNext}>
-          {page + 1 >= PAGE_COUNT ? 'Rà soát câu trả lời' : 'Trang sau'}
+          {page + 1 >= PAGE_COUNT ? 'Rà soát và gửi' : 'Trang sau'}
         </button>
       </Actions>
       {page + 1 < PAGE_COUNT && (

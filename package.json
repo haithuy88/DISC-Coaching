@@ -1,5 +1,5 @@
 {
-  "name": "disc-coaching-lab",
+  "name": "lamson-disc-30",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,13 +8,14 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/build-apps-script.mjs --check && tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "screenshots": "playwright test -c playwright.screenshots.config.ts"
+    "screenshots": "playwright test -c playwright.screenshots.config.ts",
+    "build:gas": "node scripts/build-apps-script.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",

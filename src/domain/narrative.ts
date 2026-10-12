@@ -1,41 +1,19 @@
 import { formatScore } from './interpretation';
-import { PROFILES } from './questionnaire';
-import { DIMENSIONS, type Dimension, type Interpretation, type ScoreSummary } from './types';
+import { DIMENSION_NAME, DISC_QUESTIONS } from './questionnaire';
+import { hasAnswer } from './scoring';
+import { DIMENSIONS, type AnswerMap, type Dimension, type Interpretation, type ScoreSummary, type ScoredValue } from './types';
 
-const named = (d: Dimension) => `${d} (${PROFILES[d].name.toLowerCase()})`;
+const named = (d: Dimension) => `${d} (${DIMENSION_NAME[d].toLowerCase()})`;
 
 function joinVi(items: string[]): string {
   if (items.length <= 1) return items.join('');
   return `${items.slice(0, -1).join(', ')} và ${items[items.length - 1]}`;
 }
 
-/** Diễn giải tập ứng viên theo mẫu trong tài liệu hướng dẫn. Không xếp hạng khi bằng điểm. */
-export function describeCandidates(interpretation: Interpretation): string {
-  const { status, candidates, topTied } = interpretation;
-  switch (status) {
-    case 'insufficient':
-      return 'chưa đủ dữ liệu để diễn giải xu hướng';
-    case 'flat':
-      return 'các xu hướng tương đối gần nhau trong bộ câu trả lời này, nên không có nhóm chính hay nhóm phụ';
-    case 'clearer':
-      return `xu hướng được thể hiện rõ hơn là ${named(candidates[0]!)}`;
-    case 'close_pair':
-      return `có hai xu hướng gần nhau: ${joinVi(candidates.map(named))}${
-        topTied.length === 2 ? ', với điểm bằng nhau' : ''
-      }`;
-    case 'multiple':
-      return `có nhiều xu hướng gần nhau: ${joinVi(candidates.map(named))}`;
-  }
-}
-
-export function scoresSentence(summary: ScoreSummary): string {
-  return DIMENSIONS.map((d) => `${d} ${formatScore(summary.dimensions[d].score)}`).join(', ');
-}
-
 export function headline(interpretation: Interpretation): string {
-  switch (interpretation.status) {
+  switch (interpretation.pattern) {
     case 'insufficient':
-      return 'Chưa đủ dữ liệu';
+      return 'Chưa đủ dữ liệu để nhận xét xu hướng';
     case 'flat':
       return 'Các xu hướng tương đối gần nhau';
     case 'clearer':
@@ -47,11 +25,51 @@ export function headline(interpretation: Interpretation): string {
   }
 }
 
-export function conclusion(settingLabel: string, summary: ScoreSummary, interpretation: Interpretation): string {
-  const where = settingLabel ? `Trong bối cảnh ${settingLabel.toLowerCase()} và các câu bạn đã trả lời` : 'Với các câu bạn đã trả lời';
+function describe(interpretation: Interpretation): string {
+  switch (interpretation.pattern) {
+    case 'insufficient':
+      return 'chưa đủ câu có điểm để nhận xét xu hướng';
+    case 'flat':
+      return 'các xu hướng tương đối gần nhau, nên không có nhóm chính hay nhóm phụ';
+    case 'clearer':
+      return `xu hướng được thể hiện rõ hơn là ${named(interpretation.candidates[0]!)}`;
+    case 'close_pair':
+      return `có hai xu hướng gần nhau: ${joinVi(interpretation.candidates.map(named))}${
+        interpretation.topTied.length === 2 ? ', với điểm bằng nhau' : ''
+      }`;
+    case 'multiple':
+      return `có nhiều xu hướng gần nhau: ${joinVi(interpretation.candidates.map(named))}`;
+  }
+}
+
+/** Nhận xét sơ bộ ngắn. Không gợi ý coach, cải thiện, nghề nghiệp hay đánh giá leadership. */
+export function preliminarySummary(summary: ScoreSummary, interpretation: Interpretation): string {
+  const scores = DIMENSIONS.map((d) => `${d} ${formatScore(summary.dimensions[d].score)}`).join(', ');
+  if (interpretation.pattern === 'insufficient') {
+    return `Trong các câu trả lời này, ${describe(interpretation)} (cần ít nhất 5/6 câu mỗi nhóm và 20/24 câu DISC có điểm).`;
+  }
+  const partial = interpretation.dataStatus === 'partial' ? ' Đây là kết quả tạm thời từ các câu đã có điểm.' : '';
   return (
-    `${where}, ${describeCandidates(interpretation)}. ` +
-    `Các điểm ${scoresSentence(summary)} thể hiện mức đồng tình với các phát biểu của bộ khảo sát này. ` +
-    'Đây là gợi ý để trao đổi, chưa phải đánh giá đã chuẩn hóa.'
+    `Trong các câu trả lời này, ${describe(interpretation)}. Điểm ${scores} thể hiện mức đồng tình với các phát biểu ` +
+    `của bộ khảo sát, chưa phải đánh giá đã chuẩn hóa.${partial}`
   );
+}
+
+export interface Evidence {
+  id: string;
+  text: string;
+  value: ScoredValue;
+}
+
+/** Tối đa 2 câu DISC được chấm 4–5, sắp điểm giảm dần rồi ID. Không có thì trả về rỗng, không bịa. */
+export function selectEvidence(answers: AnswerMap, max = 2): Evidence[] {
+  const items: Evidence[] = [];
+  for (const q of DISC_QUESTIONS) {
+    if (!hasAnswer(answers, q.id)) continue;
+    const v = answers[q.id];
+    if (typeof v === 'number' && v >= 4) items.push({ id: q.id, text: q.text, value: v });
+  }
+  return items
+    .sort((a, b) => (b.value !== a.value ? b.value - a.value : a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .slice(0, max);
 }

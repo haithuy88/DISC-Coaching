@@ -2,11 +2,11 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Chỉ áp dụng cho bản build: chặn mọi kết nối mạng từ trang (connect-src 'none'),
-// để bảo đảm câu trả lời không thể bị gửi đi. Dev server cần script inline nên không áp dụng.
+// Chỉ áp dụng cho bản build: trang chỉ được kết nối tới Google Apps Script (nơi nhận bài nộp),
+// không gửi dữ liệu tới bất kỳ máy chủ nào khác. Dev server cần script inline nên không áp dụng.
 const CSP =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; " +
-  "img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
+  "img-src 'self' data: blob:; connect-src https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'";
 
 function contentSecurityPolicy(): Plugin {
   return {

@@ -1,11 +1,13 @@
 import { expect, type Page } from '@playwright/test';
+import { loadGas, type Gas } from '../unit/gas-harness';
+import { TEST_SUBMIT_URL } from './constants';
 
-export const STORAGE_KEY = 'disc-coaching-lab:v1';
 const DIMS = ['D', 'I', 'S', 'C'] as const;
 export type Choice = 1 | 2 | 3 | 4 | 5 | 'na' | 'skip';
 
-/** Fixture tổng hợp chỉ dùng cho test: D=5, I=3, S=2, C=1 → D100, I50, S25, C0. */
-export const clearerD = (index: number): Choice => ({ D: 5, I: 3, S: 2, C: 1 } as const)[DIMS[index % 4]!];
+/** Fixture tổng hợp chỉ dùng cho test: câu 1–24 xen kẽ D/I/S/C → D5, I3, S2, C1; câu 25–30 (L/T) = 4. */
+export const clearerD = (index: number): Choice =>
+  index < 24 ? ({ D: 5, I: 3, S: 2, C: 1 } as const)[DIMS[index % 4]!] : 4;
 
 const SCALE_NAME: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: '1 – Hầu như không giống tôi',
@@ -15,11 +17,39 @@ const SCALE_NAME: Record<1 | 2 | 3 | 4 | 5, string> = {
   5: '5 – Rất giống tôi',
 };
 
-export async function startSurvey(page: Page) {
+export interface FakeServer {
+  gas: Gas;
+  requests: number;
+  /** lần gọi kế tiếp sẽ lỗi mạng (request không tới máy chủ) */
+  failNext: number;
+}
+
+/** Chặn request tới Apps Script và xử lý bằng chính Code.gs trên bảng tính giả trong bộ nhớ. */
+export async function fakeSheetsServer(page: Page): Promise<FakeServer> {
+  const gas = loadGas();
+  gas.setup();
+  const server: FakeServer = { gas, requests: 0, failNext: 0 };
+  await page.route(`${TEST_SUBMIT_URL}*`, async (route) => {
+    server.requests += 1;
+    if (server.failNext > 0) {
+      server.failNext -= 1;
+      await route.abort('failed');
+      return;
+    }
+    const out = gas.doPost({ postData: { contents: route.request().postData() ?? '' } });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: out.content });
+  });
+  return server;
+}
+
+export const sheetRows = (server: FakeServer, tab: string) => server.gas.ss.tab(tab).rows.slice(1);
+
+export async function identify(page: Page, name = 'Người thử E2E', dept = 'Phòng kiểm thử') {
   await page.goto('/');
-  await page.getByRole('checkbox', { name: /Tôi hiểu đây là công cụ tự phản tư/ }).check();
   await page.getByRole('button', { name: 'Bắt đầu', exact: true }).click();
-  await page.getByRole('radio', { name: /Làm việc nhóm/ }).check();
+  await page.getByLabel(/Họ và tên/).fill(name);
+  await page.getByLabel(/Phòng ban/).fill(dept);
+  await page.getByRole('checkbox', { name: /Tôi đồng ý gửi câu trả lời/ }).check();
   await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Mức độ giống bạn' })).toBeVisible();
 }
@@ -31,53 +61,17 @@ export async function choose(page: Page, number: number, choice: Choice) {
   await q.getByRole('radio', { name, exact: true }).check();
 }
 
-/** Trả lời toàn bộ 32 câu theo hàm chọn, rồi tới màn hình rà soát. */
+/** Trả lời 30 câu (8 trang, trang cuối 2 câu) rồi tới màn hình rà soát. */
 export async function answerAll(page: Page, pick: (index: number) => Choice) {
   for (let p = 0; p < 8; p++) {
-    for (let i = 0; i < 4; i++) {
-      const index = p * 4 + i;
-      await choose(page, index + 1, pick(index));
-    }
-    await page.getByRole('button', { name: p === 7 ? 'Rà soát câu trả lời' : 'Trang sau' }).click();
+    const count = p === 7 ? 2 : 4;
+    await expect(page.locator('fieldset.question')).toHaveCount(count);
+    for (let i = 0; i < count; i++) await choose(page, p * 4 + i + 1, pick(p * 4 + i));
+    await page.getByRole('button', { name: p === 7 ? 'Rà soát và gửi' : 'Trang sau' }).click();
     const skip = page.getByRole('button', { name: /^Bỏ qua, sang/ });
     if (await skip.isVisible()) await skip.click();
   }
   await expect(page.getByRole('heading', { level: 1, name: 'Rà soát câu trả lời' })).toBeVisible();
-}
-
-export async function toResults(page: Page, pick: (index: number) => Choice = clearerD) {
-  await startSurvey(page);
-  await answerAll(page, pick);
-  await page.getByRole('button', { name: 'Xem kết quả' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Bốn điểm xu hướng của bạn' })).toBeVisible();
-}
-
-export async function toExport(page: Page) {
-  await toResults(page);
-  await page.getByRole('button', { name: 'Sang phần coaching' }).click();
-  await page.getByRole('radio', { name: /Từ câu D1/ }).check();
-  await page.getByRole('button', { name: 'Lập kế hoạch 7 ngày' }).click();
-  await page.getByLabel('Tình huống sẽ áp dụng').fill('Họp nhóm sáng thứ Hai');
-  await page.getByRole('button', { name: 'Xem báo cáo & lưu' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Báo cáo của bạn' })).toBeVisible();
-}
-
-export async function downloadReport(page: Page): Promise<Record<string, unknown>> {
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: 'Tải báo cáo JSON' }).click(),
-  ]);
-  const path = await download.path();
-  const fs = await import('node:fs/promises');
-  return JSON.parse(await fs.readFile(path, 'utf8')) as Record<string, unknown>;
-}
-
-export async function importText(page: Page, name: string, text: string | Buffer) {
-  await page.getByLabel(/Mở báo cáo JSON đã xuất/).setInputFiles({
-    name,
-    mimeType: 'application/json',
-    buffer: typeof text === 'string' ? Buffer.from(text, 'utf8') : text,
-  });
 }
 
 export async function expectNoHorizontalOverflow(page: Page) {

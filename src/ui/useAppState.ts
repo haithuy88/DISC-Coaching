@@ -1,53 +1,55 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { evaluate, parseReport, type Evaluation, type ImportInfo } from '../domain/report';
-import { buildSuggestions, suggestionsFromEvidence, type CoachingSuggestions } from '../domain/recommendations';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { allDiscAnswersIdentical, interpret } from '../domain/interpretation';
+import { scoreAnswers } from '../domain/scoring';
 import { emptySession, type Session } from '../domain/session';
-import { clearStored, loadStored, saveStored, type Screen } from '../storage/persistence';
+import {
+  buildPayload,
+  newSubmissionId,
+  submitToSheets,
+  summaryFromReceipt,
+  type Receipt,
+} from '../domain/submission';
+import type { Interpretation, ScoreSummary } from '../domain/types';
+
+export type Screen = 'intro' | 'identify' | 'survey' | 'review' | 'result';
+
+export type SubmitState =
+  | { status: 'idle' }
+  | { status: 'sending' }
+  | { status: 'synced'; receipt: Receipt }
+  | { status: 'not_configured' }
+  | { status: 'rejected'; message: string }
+  | { status: 'error'; message: string };
 
 export interface AppState {
   session: Session;
   screen: Screen;
   page: number;
-  saveOnDevice: boolean;
-  importedReport: string | null;
-  importInfo: ImportInfo | null;
-  /** câu cần đưa focus tới khi mở trang khảo sát từ màn hình rà soát (không lưu) */
+  /** câu cần đưa focus tới khi mở trang khảo sát từ màn hình rà soát */
   focusQuestion: string | null;
+  submit: SubmitState;
 }
 
-function initialState(): AppState {
-  const stored = loadStored();
-  if (!stored) {
-    return { session: emptySession(), screen: 'intro', page: 0, saveOnDevice: false, importedReport: null, importInfo: null, focusQuestion: null };
-  }
-  let importInfo: ImportInfo | null = null;
-  if (stored.importedReport) {
-    const r = parseReport(stored.importedReport);
-    if (r.ok) importInfo = r.info;
-  }
-  return {
-    session: stored.session,
-    screen: stored.screen,
-    page: stored.page,
-    saveOnDevice: true,
-    importedReport: importInfo ? stored.importedReport : null,
-    importInfo,
-    focusQuestion: null,
-  };
-}
+/** URL web app Apps Script; trống = chế độ thử, không gửi đi đâu. */
+export const SUBMIT_URL: string = (import.meta.env.VITE_SUBMIT_URL ?? '').trim();
 
+const initial = (): AppState => ({
+  session: emptySession(),
+  screen: 'intro',
+  page: 0,
+  focusQuestion: null,
+  submit: { status: 'idle' },
+});
+
+/**
+ * Dữ liệu chỉ nằm trong bộ nhớ của tab: không localStorage, không analytics.
+ * Câu trả lời chỉ rời thiết bị khi người làm bấm "Gửi" sau khi đã đồng ý.
+ */
 export function useAppState() {
-  const [state, setState] = useState<AppState>(initialState);
-  const [saveError, setSaveError] = useState(false);
-
-  // Chỉ ghi localStorage khi học viên đã bật; tắt thì xóa ngay.
-  useEffect(() => {
-    if (state.saveOnDevice) {
-      setSaveError(!saveStored({ session: state.session, screen: state.screen, page: state.page, importedReport: state.importedReport }));
-    } else {
-      clearStored();
-    }
-  }, [state]);
+  const [state, setState] = useState<AppState>(initial);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const sendingRef = useRef(false);
 
   const updateSession = useCallback((patch: Partial<Session> | ((s: Session) => Partial<Session>)) => {
     setState((st) => ({ ...st, session: { ...st.session, ...(typeof patch === 'function' ? patch(st.session) : patch) } }));
@@ -57,44 +59,51 @@ export function useAppState() {
     setState((st) => ({ ...st, screen, page: page ?? st.page, focusQuestion }));
   }, []);
 
-  const setSaveOnDevice = useCallback((saveOnDevice: boolean) => setState((st) => ({ ...st, saveOnDevice })), []);
-
-  const clearAll = useCallback(() => {
-    clearStored();
-    setState({ session: emptySession(), screen: 'intro', page: 0, saveOnDevice: false, importedReport: null, importInfo: null, focusQuestion: null });
-  }, []);
-
-  const applyImport = useCallback((session: Session, info: ImportInfo, text: string) => {
-    setState((st) => ({
-      ...st,
-      session,
-      importInfo: info,
-      importedReport: info.mode === 'unverified' ? text : null,
-      screen: 'results',
-      page: 0,
-    }));
-  }, []);
-
-  /** Bắt đầu bài khảo sát mới: bỏ báo cáo nhập chưa đối chiếu. */
-  const startNew = useCallback(() => {
-    setState((st) => ({ ...st, session: emptySession(), importInfo: null, importedReport: null, screen: 'intro', page: 0 }));
-  }, []);
-
-  const evaluation: Evaluation = useMemo(() => {
-    if (state.importInfo?.mode === 'unverified' && state.importInfo.snapshot) return state.importInfo.snapshot;
-    return evaluate(state.session);
-  }, [state.session, state.importInfo]);
-
-  const suggestions: CoachingSuggestions = useMemo(() => {
-    if (state.importInfo?.mode === 'unverified') {
-      return evaluation.interpretation.status === 'insufficient'
-        ? suggestionsFromEvidence([])
-        : suggestionsFromEvidence(evaluation.evidence);
+  const submit = useCallback(async () => {
+    const current = stateRef.current;
+    if (sendingRef.current || current.submit.status === 'synced') return;
+    const session = current.session.submissionId ? current.session : { ...current.session, submissionId: newSubmissionId() };
+    const payload = buildPayload(session);
+    if (!SUBMIT_URL) {
+      setState((st) => ({ ...st, session, screen: 'result', submit: { status: 'not_configured' } }));
+      return;
     }
-    return buildSuggestions(state.session.answers, evaluation.interpretation);
-  }, [state.importInfo, state.session.answers, evaluation]);
+    sendingRef.current = true;
+    setState((st) => ({ ...st, session, screen: 'result', submit: { status: 'sending' } }));
+    try {
+      const result = await submitToSheets(SUBMIT_URL, payload);
+      setState((st) => ({
+        ...st,
+        submit:
+          result.kind === 'synced'
+            ? { status: 'synced', receipt: result.receipt }
+            : result.kind === 'rejected'
+              ? { status: 'rejected', message: result.message }
+              : { status: 'error', message: result.message },
+      }));
+    } finally {
+      sendingRef.current = false;
+    }
+  }, []);
 
-  return { state, evaluation, suggestions, saveError, updateSession, go, setSaveOnDevice, clearAll, applyImport, startNew };
+  const restart = useCallback(() => setState(initial()), []);
+
+  /** Điểm hiển thị: của máy chủ khi đã ghi nhận; nếu chưa thì tính trên máy và ghi rõ. */
+  const evaluation = useMemo((): { summary: ScoreSummary; interpretation: Interpretation; serverConfirmed: boolean } => {
+    const local = scoreAnswers(state.session.answers);
+    const localInterp = interpret(local, { allIdentical: allDiscAnswersIdentical(state.session.answers) });
+    if (state.submit.status === 'synced') {
+      const summary = summaryFromReceipt(state.submit.receipt);
+      return {
+        summary,
+        interpretation: interpret(summary, { allIdentical: allDiscAnswersIdentical(state.session.answers) }),
+        serverConfirmed: true,
+      };
+    }
+    return { summary: local, interpretation: localInterp, serverConfirmed: false };
+  }, [state.session.answers, state.submit]);
+
+  return { state, evaluation, updateSession, go, submit, restart };
 }
 
 export type AppApi = ReturnType<typeof useAppState>;

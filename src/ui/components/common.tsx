@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { DISCLAIMER, QUESTIONNAIRE_VERSION, SCORING_CONFIG_VERSION, THRESHOLD_STATUS } from '../../domain/questionnaire';
+import { DISCLAIMER, QUESTIONNAIRE_VERSION, THRESHOLD_STATUS } from '../../domain/questionnaire';
 
 export function ScreenTitle({ children, eyebrow }: { children: ReactNode; eyebrow?: string }) {
   return (
@@ -17,16 +17,14 @@ export function Limitations() {
         <strong>Giới hạn:</strong> {DISCLAIMER}
       </p>
       <p>
-        Điểm 0–100 là điểm quy đổi của bộ câu hỏi này, không phải phần trăm tính cách, percentile hay xác suất; bốn
-        điểm không cộng thành 100. Ngưỡng 10 điểm và số câu tối thiểu: {THRESHOLD_STATUS}.
+        Điểm 0–100 là điểm quy đổi của bộ câu hỏi, không phải phần trăm tính cách, percentile hay xác suất; bốn điểm
+        không cộng thành 100. Ngưỡng 10 điểm và số câu tối thiểu: {THRESHOLD_STATUS}.
       </p>
-      <p className="muted small">
-        Bộ câu hỏi: {QUESTIONNAIRE_VERSION} · Quy ước chấm: {SCORING_CONFIG_VERSION}
-      </p>
+      <p className="muted small">Bộ câu hỏi: {QUESTIONNAIRE_VERSION}</p>
     </aside>
   );
 }
 
 export function Actions({ children }: { children: ReactNode }) {
-  return <div className="actions no-print">{children}</div>;
+  return <div className="actions">{children}</div>;
 }

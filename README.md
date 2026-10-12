@@ -1,151 +1,114 @@
-# DISC Coaching Lab
+# Lam Son — Khảo sát DISC 30 câu
 
-Ứng dụng web tiếng Việt, ưu tiên điện thoại, giúp học viên **tự phản tư** về xu hướng hành vi, xem **gợi ý có bằng chứng từ chính câu trả lời** và **lập kế hoạch thử nghiệm 7 ngày**.
+Ứng dụng web tiếng Việt, ưu tiên điện thoại, cho **trưởng phòng ban Lam Son** làm khảo sát 30 câu trắc nghiệm, xem **kết quả sơ bộ của chính mình**. Toàn bộ câu trả lời và kết quả được **ghi vào một Google Sheets** do coach sở hữu. Coach tự phân tích dữ liệu sau.
 
-> Bộ câu hỏi tự biên soạn (`disc-reflection-vi-1.0.0`), **chưa chuẩn hóa hoặc kiểm định tâm trắc**. Kết quả dùng cho tự phản tư và trao đổi coaching; không dùng để chẩn đoán, tuyển dụng hoặc xếp hạng năng lực. Đây **không phải** Everything DiSC hay sản phẩm của bất kỳ nhà cung cấp thương mại nào, không dùng logo thương mại và không có chứng nhận.
+> Bộ câu hỏi tự biên soạn (`lamson-disc-30-vi-3.0.0`), **chưa chuẩn hóa hoặc kiểm định tâm trắc**. Không dùng để chẩn đoán, tuyển dụng, thưởng/phạt hay xếp hạng năng lực. Không phải Everything DiSC hay sản phẩm của nhà cung cấp thương mại nào.
 
-## Chạy ứng dụng
+## Phạm vi
 
-Yêu cầu Node.js ≥ 22.12 (đã thử với Node 22.22, npm 10.9).
-
-```bash
-npm install          # cài đúng phiên bản trong package-lock.json
-npm run dev          # http://127.0.0.1:5173
-npm run build        # kiểm tra kiểu (tsc -b) + build vào dist/
-npm run preview      # chạy bản build tại http://127.0.0.1:4173
-npm test             # unit test (Vitest)
-npm run test:e2e     # E2E (Playwright, tự build + preview)
-npm run screenshots  # chụp lại docs/screenshots bằng fixture tổng hợp
-```
-
-Lần đầu chạy E2E trên máy khác: `npx playwright install chromium`.
-
-### Phiên bản đã khóa
-
-Mọi dependency được ghi phiên bản chính xác (`.npmrc` có `save-exact=true`) và khóa bằng `package-lock.json`.
-
-| Gói | Phiên bản | Ghi chú |
-|---|---|---|
-| react / react-dom | 19.3.0 | |
-| zod | 4.6.5 | kiểm tra JSON câu hỏi, localStorage, file nhập |
-| vite | 8.3.4 | |
-| @vitejs/plugin-react | 6.1.2 | |
-| typescript | 5.9.3 | chọn nhánh 5.x ổn định thay vì 7.x để tương thích công cụ |
-| vitest | 5.0.3 | |
-| @playwright/test | 1.56.1 | khớp bản Chromium 1194 có sẵn trong môi trường kiểm thử |
-| @fontsource/inter, @fontsource/plus-jakarta-sans | 5.3.0 | font tự host, có bộ ký tự tiếng Việt, không gọi Google Fonts |
-| @types/node, @types/react, @types/react-dom | 22.20.5, 19.3.0, 19.3.0 | |
+- Luồng: **Mở đầu → Thông tin (họ tên, phòng ban bắt buộc; chức danh tùy chọn) + đồng ý gửi cho coach → 30 câu (4 câu/trang, trang cuối 2 câu) → Rà soát → Gửi → Kết quả sơ bộ.**
+- 30 câu = 24 câu DISC (6 câu mỗi nhóm D/I/S/C) + 3 câu leadership + 3 câu làm việc nhóm. Thang 1–5 và N/A riêng. Không chọn sẵn đáp án. Phải chọn đủ 30 câu mới gửi được.
+- Kết quả sơ bộ: bốn điểm, số câu có điểm từng nhóm, một nhận xét ngắn, tối đa 2 phát biểu được chấm 4–5, bảng lựa chọn của 6 câu bổ sung, trạng thái ghi Sheets.
+- **Không có** coaching, câu hỏi mở, kế hoạch hành động, gợi ý coach, đánh giá nguồn lực hay xếp hạng trong app/Sheets. Phần đánh giá nguồn lực công ty và đề xuất phương án coach được làm riêng **sau khi đã có dữ liệu thật**.
 
 ## Kiến trúc
 
 ```
-src/
-  data/disc-questionnaire.vi.json   # nguồn duy nhất: câu hỏi, thang, profiles, rules
-  domain/                           # logic thuần, không phụ thuộc React
-    questionnaire.ts                # tải + kiểm tra JSON bằng zod khi khởi động
-    answers.ts                      # whitelist ID, kiểm tra giá trị, chặn khóa nguy hiểm
-    scoring.ts                      # n, tổng, mean, score từng nhóm
-    interpretation.ts               # insufficient / flat / clearer / close_pair / multiple
-    recommendations.ts              # bằng chứng, giả thuyết, bài tập cặp, lựa chọn mục tiêu
-    narrative.ts                    # câu diễn giải tiếng Việt theo mẫu
-    session.ts                      # kiểu dữ liệu phiên, kế hoạch, ngày
-    report.ts                       # export JSON, schema, import + tính lại
-  storage/persistence.ts            # localStorage chỉ khi học viên bật
-  ui/                               # React: App, useAppState, screens/, components/
-  styles/                           # tokens.css, base.css, components.css, print.css
-tests/unit/                         # Vitest
-tests/e2e/                          # Playwright
-tests/screenshots/                  # chụp màn hình tài liệu
-docs/                               # tài liệu coaching gốc, screenshots, PDF mẫu
+Trình duyệt (React + TypeScript + Vite)          Google (tài khoản của coach)
+  ├─ src/data/lamson-30.vi.json   ──┐              ┌─ Google Sheets "LAM SON - DISC 30 cau - Ket qua"
+  ├─ src/domain/ (chấm điểm, nhận xét)            │    KET_QUA · TRA_LOI · DANH_SACH · CAU_HOI · HUONG_DAN
+  └─ POST text/plain ──────────────────────────────►  Apps Script web app (apps-script/Code.gs)
+                                                       kiểm tra → chấm lại → khóa → ghi 2 tab → biên nhận
 ```
 
-Luồng: Mở đầu (xác nhận đã hiểu) → Bối cảnh → Khảo sát 8 trang × 4 câu → Rà soát → Kết quả → Coaching → Kế hoạch 7 ngày → Lưu & chia sẻ (in/PDF, export/import, xóa dữ liệu). Khảo sát và báo cáo không gọi AI, không cần API key, không có backend.
+- **Máy chủ = Google Apps Script** gắn vào chính Sheet. Không cần thuê server, không có secret trong code. Apps Script chạy bằng quyền của coach, nên chỉ coach đọc được Sheet; người làm khảo sát chỉ **gửi** được dữ liệu.
+- `apps-script/Code.gs` được **sinh tự động** từ `apps-script/Code.template.js` + JSON câu hỏi + schema Sheets (`npm run build:gas`). `npm run build` báo lỗi nếu Code.gs cũ.
+- Máy chủ **không tin điểm do trình duyệt gửi**: payload không có điểm (trường thừa bị từ chối) và Apps Script tự tính lại. Một test so sánh chấm điểm của app và Apps Script trên 300 bộ đáp án ngẫu nhiên.
+
+| Thư mục | Nội dung |
+|---|---|
+| `src/data/` | `lamson-30.vi.json` (30 câu, thang, quy tắc), `lamson-30.sheets-schema.json` (tab, tiêu đề cột) |
+| `src/domain/` | `questionnaire` (kiểm tra JSON), `answers` (whitelist ID, giá trị), `scoring`, `interpretation`, `narrative`, `session`, `submission` (payload, gửi, biên nhận) |
+| `src/ui/` | `useAppState`, 5 màn hình, biểu đồ |
+| `apps-script/` | Template và Code.gs để dán vào Apps Script |
+| `tests/unit/` | Vitest: chấm điểm, ranh giới, payload, Apps Script trên bảng tính giả |
+| `tests/e2e/` | Playwright: luồng chính với Code.gs thật chạy trên bảng tính giả |
+| `docs/lam-son/` | Tài liệu gốc (prompt, 30 câu, schema) · `docs/screenshots/` ảnh màn hình |
+
+## Chạy và kiểm thử
+
+Yêu cầu Node.js ≥ 22.12.
+
+```bash
+npm install
+npm run dev            # http://127.0.0.1:5173 – chế độ chạy thử nếu chưa có VITE_SUBMIT_URL
+npm run build          # kiểm tra Code.gs + kiểu + build dist/
+npm test               # Vitest
+npm run test:e2e       # Playwright (tự build với URL Apps Script giả)
+npm run build:gas      # sinh lại apps-script/Code.gs sau khi sửa câu hỏi/schema
+npm run screenshots
+```
+
+Lần đầu chạy E2E trên máy khác: `npx playwright install chromium`. Phiên bản thư viện được khóa chính xác trong `package.json` + `package-lock.json` (React 19.3.0, Vite 8.3.4, TypeScript 5.9.3, Zod 4.6.5, Vitest 5.0.3, Playwright 1.56.1).
+
+Khi **chưa cấu hình** `VITE_SUBMIT_URL`, app hiện rõ “Bản chạy thử: chưa gửi cho coach” và không gửi gì ra ngoài.
+
+## Thiết lập Google Sheets (làm một lần, khoảng 10 phút)
+
+Thư mục đích: `G:\My Drive\COACHING\DISC` = Drive folder `1iDOyMIg7XzcjvJ_3QQk8Nv9gFoxSgHOl`. Đường dẫn G: chỉ là nơi Drive đồng bộ trên máy tính; trình duyệt không ghi trực tiếp vào đó.
+
+1. Mở [thư mục DISC trên Google Drive](https://drive.google.com/drive/folders/1iDOyMIg7XzcjvJ_3QQk8Nv9gFoxSgHOl) bằng tài khoản của coach → **Mới → Google Trang tính**, đặt tên `LAM SON - DISC 30 cau - Ket qua`. Nếu đã có file trùng tên, hãy chọn đúng file muốn dùng; script không xóa file nào.
+2. Trong Sheet: **Tiện ích mở rộng → Apps Script**. Xóa nội dung mẫu, dán toàn bộ `apps-script/Code.gs`, bấm Lưu.
+3. Chọn hàm `setup` → **Chạy** → cấp quyền cho chính tài khoản của bạn. Script tạo 5 tab và tiêu đề cột, điền CAU_HOI và HUONG_DAN. Chạy lại không tạo trùng; tab cũ (ví dụ COACH_CA_NHAN) được giữ nguyên, script chỉ không ghi vào đó nữa.
+4. **Triển khai → Tùy chọn triển khai mới → Ứng dụng web**: *Thực thi với tư cách*: **Tôi**; *Người có quyền truy cập*: **Bất kỳ ai**. Sao chép URL kết thúc bằng `/exec`.
+   - “Bất kỳ ai” chỉ cho phép **gửi** bài; không ai đọc được Sheet qua URL này (hàm `doGet` chỉ trả trạng thái dịch vụ).
+5. Tạo file `.env` (xem `.env.example`) với `VITE_SUBMIT_URL=<URL /exec>`, rồi `npm run build`. Thư mục `dist/` là website tĩnh để đặt lên hosting tĩnh bất kỳ (việc chọn và đưa lên hosting do chủ dự án quyết định).
+6. Không chia sẻ Sheet công khai. Chỉ thêm quyền cho coach được chỉ định. Ẩn hoặc khóa tab **không** phải là kiểm soát truy cập.
+7. (Tùy chọn) Apps Script → Cài đặt dự án → Thuộc tính tập lệnh: `CAMPAIGN_ID` (mặc định `LAMSON-2026`).
+
+Khi sửa Code.gs: dán bản mới rồi **Triển khai → Quản lý triển khai → Chỉnh sửa → Phiên bản mới**; URL `/exec` giữ nguyên.
+
+**DANH_SACH**: coach tự nhập danh sách trưởng phòng dự kiến (`Participant_ID, Ho_ten, Phong_ban, Chuc_danh, Campaign_ID`) để biết ai chưa làm. `Participant_ID` trong KET_QUA = `P-` + 12 ký tự SHA-256 của “họ tên|phòng ban” (chữ thường), dùng để đối chiếu, không phải mã bí mật.
+
+## Ghi dữ liệu an toàn
+
+- Mỗi lần nộp có `Submission_ID` (UUID) tạo trên máy. **Gửi lại cùng mã không tạo dòng trùng**; cùng mã nhưng khác đáp án bị từ chối.
+- Apps Script dùng `LockService` và kiểm tra **từng tab riêng**: nếu lần trước chỉ ghi được TRA_LOI (Google lỗi 403/429/timeout), lần gửi lại sẽ bổ sung KET_QUA.
+- Lỗi tạm thời → app hiện “Chưa gửi được” và nút **Gửi lại**; câu trả lời vẫn còn trên trang. App **chỉ** báo “Đã ghi nhận vào Google Sheets” khi nhận được biên nhận hợp lệ, đúng mã.
+- Chuỗi bắt đầu bằng `= + - @` được ghi như văn bản (thêm `'`) để chặn chèn công thức.
+- Không ghi log đáp án hay thông tin cá nhân. Không localStorage, không analytics. Bản build có Content-Security-Policy chỉ cho phép kết nối tới `script.google.com`.
+
+### Giới hạn so với prompt gốc
+
+Prompt gốc mô tả máy chủ Node + SQLite/PostgreSQL, outbox, worker đồng bộ và link mời cá nhân. Theo lựa chọn của chủ dự án, bản này dùng Apps Script và người làm tự nhập họ tên + phòng ban. Hệ quả:
+
+- Không có link mời/cookie phiên, nên **không chống mạo danh**: ai có link app đều gửi được bài dưới tên bất kỳ. Coach đối chiếu với DANH_SACH. Nếu cần chống mạo danh, phải bổ sung link mời có mã riêng.
+- Sheets là nơi lưu chính (không có database riêng). Không có hàng đợi bền vững phía máy chủ; nếu Google lỗi, dữ liệu nằm trên trang của người làm cho tới khi gửi lại thành công.
+- Apps Script giới hạn khoảng 30 lượt thực thi đồng thời và có hạn mức ngày; đủ cho quy mô vài trăm trưởng phòng.
+- Chưa kiểm chứng với Google thật trong môi trường này (không có quyền vào Drive của coach). Toàn bộ logic Code.gs đã chạy trong test trên bảng tính giả, gồm cả lỗi 403/429/timeout và ghi một phần.
 
 ## Công thức chấm điểm
 
-Áp dụng cho từng nhóm D, I, S, C (8 câu mỗi nhóm, không có câu đảo điểm):
+- Chỉ 24 câu `scored: true`. Mỗi nhóm: `n` = số câu 1–5 (N/A và câu thiếu không tính, **không** thay bằng 3); `mean = total / n`; `score = 25 × (mean − 1)`, 0–100; `n = 0` → không có điểm.
+- 6 câu L1–L3, T1–T3: chỉ lưu đáp án gốc, không cộng điểm, không tạo điểm năng lực.
+- **complete**: 24/24 câu DISC có điểm; **partial**: 20–23 và mỗi nhóm ≥ 5; **insufficient**: còn lại (không nhận xét xu hướng).
+- **flat** nếu cao nhất − thấp nhất ≤ 10. Ngược lại, ứng viên = mọi nhóm cách điểm cao nhất ≤ 10, giữ đồng hạng: 1 → clearer, 2 → close_pair, 3 → multiple. So sánh trên điểm chưa làm tròn, sai số 1e-9; chỉ làm tròn 1 chữ số khi hiển thị.
+- Mọi câu DISC có điểm cùng một mức → lời mời rà soát thân thiện, không cáo buộc.
+- Không percentile, không độ tin cậy; bốn điểm không cộng thành 100. Các ngưỡng là quy ước MVP, chưa kiểm định.
 
-- `n` = số câu đã chấm 1–5 (N/A = `null` không được tính và **không** bị thay bằng 3; câu chưa trả lời cũng không được tự điền).
-- `mean = total / n`, `score = 25 × (mean − 1)` → dải 0–100. Với `n = 0`: `mean = score = null`, không chia cho 0.
-- Bốn điểm độc lập, **không cộng thành 100**; không phải percentile, phần trăm tính cách hay xác suất.
+## Sửa câu hỏi
 
-Diễn giải (quy ước thiết kế MVP, không phải ngưỡng tâm trắc; lưu trong `rules` của JSON và `SCORING_CONFIG_VERSION = disc-lab-scoring-mvp-1`):
+1. Sửa `src/data/lamson-30.vi.json` và **đổi `version`**. Nếu đổi ID câu, sửa tiêu đề TRA_LOI trong `src/data/lamson-30.sheets-schema.json`.
+2. `npm run build:gas`, chạy test, dán Code.gs mới vào Apps Script, chạy `setup()` (thêm câu hỏi phiên bản mới vào CAU_HOI), triển khai phiên bản mới.
+3. Máy chủ từ chối bài nộp mang phiên bản khác (ví dụ bộ 32 câu cũ), nên dữ liệu hai phiên bản không bị trộn.
 
-1. **insufficient** nếu có nhóm `n < 6` hoặc tổng `< 24`: chỉ hiển thị số câu từng nhóm; không nhóm chính, không strengths, không gợi ý.
-2. Đủ dữ liệu nhưng `< 32` câu có điểm → `partial`, ghi rõ “kết quả tạm thời”.
-3. **flat** nếu `max − min ≤ 10`: không nhóm chính/phụ.
-4. Ngược lại, `candidates` = mọi nhóm có `max − score ≤ 10` (giữ mọi đồng hạng): 1 → **clearer**, 2 → **close_pair**, 3 → **multiple**.
-5. So sánh trên điểm chưa làm tròn, sai số `1e-9` ở ranh giới; chỉ làm tròn 1 chữ số khi hiển thị. Thứ tự D/I/S/C chỉ dùng để hiển thị, không tạo ưu thế khi bằng điểm.
-6. Mọi câu có điểm cùng một giá trị → `reviewSuggested`: lời mời rà soát thân thiện, không cáo buộc, không vô hiệu hóa kết quả.
+## Xóa dữ liệu và lưu trữ
 
-Gợi ý: tối đa 3 câu đã chấm 4–5, sắp điểm giảm dần rồi ID theo bảng chữ cái; mỗi gợi ý có `evidenceIds`, giá trị, phát biểu và `action` lấy từ JSON. Không có câu 4–5 → nói rõ, không bịa. Giả thuyết theo nhóm (profiles) chỉ đưa cho clearer/close_pair, luôn dùng “có thể”, “nếu”; close_pair có thêm bài tập cặp tự biên soạn (DI, DS, DC, IS, IC, SC). multiple/flat ưu tiên từng câu trả lời và mục tiêu học viên tự chọn. Câu 1–2 chỉ xuất hiện như lựa chọn thử nghiệm tùy ý, không phải khuyết điểm.
+- Người làm yêu cầu xóa: coach xóa dòng có cùng `Submission_ID` ở KET_QUA và TRA_LOI.
+- Thời hạn lưu trữ do chủ dự án quyết định trước khi dùng thật, và nên ghi vào tab HUONG_DAN.
+- Sao lưu: Google Sheets có lịch sử phiên bản; có thể định kỳ **Tệp → Tải xuống → .xlsx** vào thư mục DISC.
 
-## Giới hạn
+## Kiểm thử hiện có
 
-- Chưa có nghiên cứu độ tin cậy, cấu trúc, giá trị đo hay công bằng giữa nhóm; thời lượng 8–10 phút là ước lượng cần thử nghiệm.
-- Không suy ra natural/adapted, stress, nghề nghiệp, IQ, bệnh, mức lãnh đạo hay độ tương hợp.
-- Điểm thấp hơn chỉ là ít đồng tình hơn với các phát biểu trong bối cảnh đã chọn, không chứng minh thiếu năng lực.
-- App không gửi nhắc nhở; ngày xem lại là để học viên tự ghi lịch.
-
-## Quyền riêng tư
-
-- Mặc định dữ liệu chỉ nằm trong bộ nhớ của tab, mất khi tải lại/đóng trang.
-- “Lưu trên thiết bị này” (nút **Quyền riêng tư**) mới ghi `localStorage` (khóa `disc-coaching-lab:v1`), kèm cảnh báo thiết bị dùng chung. Tắt tùy chọn sẽ xóa bản lưu. Dữ liệu khôi phục được kiểm tra lại bằng zod; hỏng thì bị xóa.
-- **Xóa toàn bộ dữ liệu** (có bước xác nhận) xóa bộ nhớ tab và localStorage.
-- Không analytics, không gửi mạng. Bản build có Content-Security-Policy `connect-src 'none'`, font được tự host.
-- Chia sẻ với coach chỉ bằng cách học viên tự xuất file. Câu trả lời từng câu chỉ có trong file khi bật ô “Kèm câu trả lời từng câu” (mặc định tắt).
-
-## Schema export (`schemaVersion: 1`)
-
-```jsonc
-{
-  "schema": "disc-coaching-lab/report",
-  "schemaVersion": 1,
-  "createdAt": "2026-10-11T08:00:00.000Z",
-  "questionnaireVersion": "disc-reflection-vi-1.0.0",
-  "scoringConfig": { "version": "disc-lab-scoring-mvp-1",
-    "rules": { "minAnsweredPerDimension": 6, "minAnsweredTotal": 24, "closeDelta": 10, "flatRange": 10, "tieDelta": 0 } },
-  "context": { "setting": "team", "settingLabel": "Làm việc nhóm", "period": "last-3-months",
-               "periodLabel": "3 tháng gần đây", "displayName": "" },
-  "startedAt": "2026-10-11", "completedAt": "2026-10-11",
-  "counts": { "answered": 32, "na": 0, "unanswered": 0, "total": 32 },
-  "scores": { "D": { "n": 8, "itemCount": 8, "score": 100 }, "I": { ... }, "S": { ... }, "C": { ... } },
-  "interpretation": { "status": "clearer", "partial": false, "candidates": ["D"], "reviewSuggested": false },
-  "evidence": [{ "id": "D1", "value": 5, "text": "…", "action": "…" }],
-  "reflections": { "D1": "fit" }, "fitNote": "", "notFitNote": "",
-  "goal": { "optionId": "evidence:D2", "text": "…" },
-  "plan": { "situation": "", "behavior": "", "count": 3, "usefulSignal": "", "feedbackPerson": "",
-            "reviewDate": "2026-10-18", "notes": "" },
-  "answersIncluded": false
-  // "answers": [{ "id": "D1", "value": 5 }, { "id": "I1", "value": null }, ...]  chỉ khi answersIncluded = true
-}
-```
-
-Import (chỉ khi người dùng chọn file): giới hạn 1 MB; JSON hợp lệ; chặn `__proto__`/`constructor`/`prototype` ở mọi độ sâu; `schema`, `schemaVersion`, `questionnaireVersion` phải được hỗ trợ; schema zod strict (không trường lạ, giới hạn độ dài text). Đáp án: whitelist 32 ID, không trùng, chỉ số nguyên 1–5 hoặc `null`.
-
-- Có `answers` hợp lệ → **tính lại toàn bộ** điểm, diễn giải và gợi ý; điểm trong file bị bỏ qua (báo nếu không khớp).
-- Không có `answers` → nhãn “Báo cáo được nhập, chưa đối chiếu đáp án”; điểm được kiểm tra tính khả thi (`25·(k−n)/n`, số câu khớp tổng), diễn giải được tính lại từ điểm, phát biểu/action lấy từ bộ câu hỏi chứ không lấy từ file.
-- Mọi text hiển thị dạng thuần qua React; không dùng `dangerouslySetInnerHTML`.
-
-## Sửa câu hỏi có version
-
-1. Sửa `src/data/disc-questionnaire.vi.json` và **tăng `version`** (ví dụ `disc-reflection-vi-1.1.0`). App kiểm tra JSON khi khởi động (ID dạng `D1`, khớp nhóm, không trùng, `reverse: false`, đủ bốn nhóm).
-2. Nếu đổi ngưỡng/logic chấm, sửa `rules` và tăng `SCORING_CONFIG_VERSION` trong `src/domain/questionnaire.ts`.
-3. Báo cáo và bản lưu cũ có `questionnaireVersion` khác sẽ bị từ chối với thông báo rõ (không trộn hai bộ câu hỏi). Nếu cần nhận bản cũ, thêm chuyển đổi tường minh trong `report.ts`.
-4. Thứ tự hiển thị là thứ tự trong JSON (nên giữ xen kẽ D/I/S/C). Cập nhật test nếu số câu thay đổi; chạy `npm test && npm run test:e2e`.
-
-## Kiểm thử
-
-- **Unit (Vitest, 69 test)**: `tests/unit/` – tất cả 1/3/5, clearer, close_pair đồng hạng, multiple, n=6 vs n=5, 0 câu không NaN, N/A ≠ 3, biên 10 (D75/I65/S50/C25 giữ I; 64,99 loại), range=10 flat, làm tròn không tạo/loại đồng hạng, input xấu (string, số thực, NaN, Infinity, ID lạ/trùng, `__proto__`), XSS text, version lạ, > 1 MB, bằng chứng 0/ít hơn 3/đủ 3 và sourceIds.
-- **E2E (Playwright, 18 test, viewport 375px + 320px)**: `tests/e2e/` – luồng đầy đủ tới in/PDF (nút bị ẩn khi in), quay lại giữ đáp án, lỗi trang thiếu câu, rà soát và sửa câu, insufficient, partial, reviewSuggested, refresh khi có/không opt-in, xóa localStorage, export mặc định không có answers / có khi opt-in, import bị sửa điểm được tính lại, import không answers, XSS, version lạ, file hỏng, > 1 MB, bàn phím, không tràn ngang 320/375px.
-- Fixture trong test là dữ liệu tổng hợp, không hiển thị như dữ liệu người dùng.
-
-## Screenshots
-
-`docs/screenshots/` (375px): `01-mo-dau`, `02-boi-canh`, `03-khao-sat`, `04-ra-soat`, `05-ket-qua`, `06-coaching`, `07-ke-hoach`, `08-bao-cao-export`, `09-ban-in`, cùng `bao-cao-mau.pdf` (PDF tạo bằng Chromium).
-
-## Giai đoạn sau MVP (chỉ mô tả, chưa xây)
-
-**Coach quản lý lớp** cần: backend thật; authentication; phân quyền owner/coach/student; consent chia sẻ riêng cho từng báo cáo; thời hạn lưu trữ do chủ dự án chọn; xóa dữ liệu theo yêu cầu; audit log; kiểm thử truy cập trái phép. Không đặt secret trong client và không làm dashboard chỉ bằng localStorage.
-
-**Nếu thêm AI**: chỉ để diễn đạt lại dữ liệu đã chấm; bắt buộc `evidenceIds` và validation output; consent riêng trước khi truyền dữ liệu; mặc định không gửi thông tin định danh; luôn có fallback rule-based như hiện tại.
+- **Unit (57)**: 30 ID / 24 câu DISC cân bằng 4 × 6 / 6 câu không chấm; tất cả 1/3/5 → 0/50/100; 6 câu phụ đổi giá trị không đổi điểm DISC; 5/6 mỗi nhóm → partial, một nhóm 4 → insufficient; biên 10, đồng hạng, làm tròn, N/A, giá trị xấu; payload, gửi lại, lỗi mạng; Apps Script: setup 5 tab không trùng, giữ tab cũ, tiêu đề lệch, ghi đúng cột, trùng mã, xung đột, 403/429, ghi một phần, timeout sau khi ghi, chặn công thức, payload xấu (bản 32 câu, 29 câu, ID trùng/lạ, chuỗi, 3.5, 6, NaN/Infinity, `__proto__`, quá lớn), so khớp chấm điểm app và máy chủ.
+- **E2E (9, màn hình 375 px và 320 px)**: luồng đầy đủ tới Sheet, thông tin bắt buộc, không gửi trước khi bấm Gửi, quay lại giữ đáp án, trang cuối 2 câu, rà soát chặn gửi khi thiếu, lỗi mạng rồi gửi lại không trùng, Google lỗi một tab rồi gửi lại, máy chủ từ chối, bàn phím, không tràn ngang, không có giao diện coaching/câu mở.

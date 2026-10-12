@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { TEST_SUBMIT_URL } from './tests/e2e/constants';
 
 // E2E chạy trên bản build (vite preview) để giống môi trường thật.
 export default defineConfig({
@@ -16,8 +17,9 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build && npm run preview',
+    env: { VITE_SUBMIT_URL: TEST_SUBMIT_URL },
     url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 180_000,
   },
 });

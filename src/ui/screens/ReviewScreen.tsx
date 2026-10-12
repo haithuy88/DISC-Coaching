@@ -1,42 +1,41 @@
-import { PAGE_COUNT, QUESTIONS, QUESTIONS_PER_PAGE, RULES, SCALE } from '../../domain/questionnaire';
-import { todayIso } from '../../domain/session';
+import { useRef, useState } from 'react';
+import { PAGE_COUNT, QUESTIONS, QUESTIONS_PER_PAGE, scaleLabel } from '../../domain/questionnaire';
 import { hasAnswer } from '../../domain/scoring';
+import { unansweredIds } from '../../domain/submission';
 import type { Question } from '../../domain/types';
 import { Actions, ScreenTitle } from '../components/common';
 import { SurveyProgress } from './SurveyScreen';
-import type { AppApi } from '../useAppState';
-
-function labelOf(value: number | null | undefined): string {
-  if (value === undefined) return 'Chưa trả lời';
-  if (value === null) return 'N/A – chưa có trải nghiệm';
-  const s = SCALE.find((x) => x.value === value);
-  return `${value} – ${s?.label ?? ''}`;
-}
+import { SUBMIT_URL, type AppApi } from '../useAppState';
 
 export function ReviewScreen({ api }: { api: AppApi }) {
   const { session } = api.state;
-  const { interpretation, summary } = api.evaluation;
-  const unanswered = QUESTIONS.filter((q) => !hasAnswer(session.answers, q.id));
+  const missingIds = unansweredIds(session.answers);
+  const missing = QUESTIONS.filter((q) => missingIds.includes(q.id));
   const na = QUESTIONS.filter((q) => hasAnswer(session.answers, q.id) && session.answers[q.id] === null);
-  const sufficient = interpretation.status !== 'insufficient';
+  const [blocked, setBlocked] = useState(false);
+  const alertRef = useRef<HTMLDivElement>(null);
 
   const edit = (q: Question) => {
     const index = QUESTIONS.indexOf(q);
     api.go('survey', Math.floor(index / QUESTIONS_PER_PAGE), q.id);
   };
 
-  const toResults = () => {
-    // Ngày làm = ngày gần nhất học viên xem kết quả với dữ liệu đủ điều kiện.
-    if (sufficient) api.updateSession({ completedAt: todayIso() });
-    api.go('results');
+  const onSubmit = () => {
+    if (missing.length > 0) {
+      setBlocked(true);
+      requestAnimationFrame(() => alertRef.current?.focus());
+      return;
+    }
+    void api.submit();
   };
 
-  const IssueList = ({ items, title, kind }: { items: Question[]; title: string; kind: 'missing' | 'na' }) =>
+  const IssueList = ({ items, title, kind, hint }: { items: Question[]; title: string; kind: 'missing' | 'na'; hint: string }) =>
     items.length === 0 ? null : (
       <div className="card stack">
         <h2>
           {title} ({items.length})
         </h2>
+        <p className="muted small">{hint}</p>
         <ul className="review-list">
           {items.map((q) => {
             const number = QUESTIONS.indexOf(q) + 1;
@@ -58,32 +57,32 @@ export function ReviewScreen({ api }: { api: AppApi }) {
 
   return (
     <section className="stack">
-      <ScreenTitle eyebrow="Trước khi xem kết quả">Rà soát câu trả lời</ScreenTitle>
+      <ScreenTitle eyebrow="Trước khi gửi">Rà soát câu trả lời</ScreenTitle>
       <SurveyProgress api={api} />
 
-      {sufficient ? (
+      {missing.length === 0 ? (
         <div className="notice notice-success" role="status">
           <p>
-            <strong>Đủ dữ liệu để xem kết quả.</strong>{' '}
-            {summary.answered < QUESTIONS.length
-              ? `Bạn có ${summary.answered}/${QUESTIONS.length} câu có điểm, kết quả sẽ là kết quả tạm thời từ các câu đã trả lời.`
-              : 'Bạn đã trả lời tất cả các câu.'}
+            <strong>Bạn đã chọn đủ {QUESTIONS.length} câu.</strong> Có thể gửi cho coach.
           </p>
-          <p>Câu chưa trả lời hoặc N/A không được tự thay bằng điểm 3.</p>
+          {na.length > 0 && <p>Câu N/A không được tính thành điểm 3.</p>}
         </div>
       ) : (
-        <div className="notice notice-warn" role="status">
+        <div
+          className={`notice ${blocked ? 'notice-error' : 'notice-warn'}`}
+          role={blocked ? 'alert' : 'status'}
+          tabIndex={-1}
+          ref={alertRef}
+        >
           <p>
-            <strong>Chưa đủ dữ liệu để diễn giải.</strong> Cần ít nhất {RULES.minAnsweredTotal}/{QUESTIONS.length} câu có
-            điểm và đủ số câu có điểm ở mỗi nhóm phát biểu ({RULES.minAnsweredPerDimension}/8). Hiện có{' '}
-            {summary.answered} câu có điểm.
+            <strong>Còn {missing.length} câu chưa có lựa chọn.</strong> Hãy chọn 1–5 hoặc N/A cho đủ {QUESTIONS.length}{' '}
+            câu trước khi gửi.
           </p>
-          <p>Hãy xem lại các câu chưa trả lời hoặc N/A bên dưới nếu bạn có ví dụ phù hợp.</p>
         </div>
       )}
 
-      <IssueList items={unanswered} title="Câu chưa trả lời" kind="missing" />
-      <IssueList items={na} title="Câu đã chọn N/A" kind="na" />
+      <IssueList items={missing} title="Câu chưa chọn" kind="missing" hint="Bắt buộc chọn trước khi gửi." />
+      <IssueList items={na} title="Câu đã chọn N/A" kind="na" hint="Có thể giữ nguyên nếu bạn chưa có trải nghiệm." />
 
       <details className="card">
         <summary>Xem toàn bộ {QUESTIONS.length} câu trả lời</summary>
@@ -91,7 +90,13 @@ export function ReviewScreen({ api }: { api: AppApi }) {
           {QUESTIONS.map((q) => (
             <li key={q.id}>
               <span>{q.text}</span>
-              <span className="answer-chip">{labelOf(session.answers[q.id])}</span>
+              <span className="answer-chip">
+                {hasAnswer(session.answers, q.id)
+                  ? session.answers[q.id] === null
+                    ? 'N/A'
+                    : `${session.answers[q.id]} – ${scaleLabel(session.answers[q.id])}`
+                  : 'Chưa chọn'}
+              </span>
               <button type="button" className="btn-link" onClick={() => edit(q)}>
                 Sửa
               </button>
@@ -100,12 +105,19 @@ export function ReviewScreen({ api }: { api: AppApi }) {
         </ol>
       </details>
 
+      {!SUBMIT_URL && (
+        <p className="notice notice-warn" data-testid="demo-mode">
+          <strong>Bản chạy thử:</strong> chưa cấu hình địa chỉ Google Sheets, nên bấm Gửi chỉ hiện kết quả trên máy này và
+          không gửi cho coach.
+        </p>
+      )}
+
       <Actions>
         <button type="button" className="btn btn-ghost" onClick={() => api.go('survey', PAGE_COUNT - 1)}>
           Về trang khảo sát cuối
         </button>
-        <button type="button" className="btn btn-primary" onClick={toResults}>
-          {sufficient ? 'Xem kết quả' : 'Xem tình trạng dữ liệu'}
+        <button type="button" className="btn btn-primary" onClick={onSubmit}>
+          Gửi cho coach và xem kết quả
         </button>
       </Actions>
     </section>

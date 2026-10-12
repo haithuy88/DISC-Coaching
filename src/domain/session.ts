@@ -1,111 +1,61 @@
-import { z } from 'zod';
-import { QUESTION_IDS } from './questionnaire';
 import type { AnswerMap } from './types';
 
-export const SETTINGS = ['work', 'study', 'team'] as const;
-export type Setting = (typeof SETTINGS)[number];
+export const MAX_NAME = 80;
+export const MAX_DEPARTMENT = 80;
+export const MAX_TITLE = 80;
 
-export const SETTING_LABEL: Record<Setting, string> = {
-  work: 'Công việc',
-  study: 'Học tập',
-  team: 'Làm việc nhóm',
-};
+/** Phiên bản nội dung đồng ý gửi dữ liệu cho coach; đổi khi đổi nội dung thông báo. */
+export const CONSENT_VERSION = 'lamson-consent-1.0';
 
-export const PERIOD = 'last-3-months' as const;
-export const PERIOD_LABEL = '3 tháng gần đây';
-
-export const FITS = ['fit', 'not_fit', 'unsure'] as const;
-export type Fit = (typeof FITS)[number];
-export const FIT_LABEL: Record<Fit, string> = {
-  fit: 'Phù hợp',
-  not_fit: 'Không phù hợp',
-  unsure: 'Chưa chắc',
-};
-
-export const MAX_NAME = 60;
-export const MAX_TEXT = 2000;
-
-export interface Plan {
-  situation: string;
-  behavior: string;
-  count: number | null;
-  usefulSignal: string;
-  feedbackPerson: string;
-  reviewDate: string;
-  notes: string;
+export interface Participant {
+  fullName: string;
+  department: string;
+  title: string;
 }
 
 export interface Session {
-  consentAcknowledged: boolean;
-  setting: Setting | null;
-  displayName: string;
+  consentAt: string | null;
+  participant: Participant;
   answers: AnswerMap;
-  startedAt: string | null;
-  completedAt: string | null;
-  reflections: Partial<Record<string, Fit>>;
-  fitNote: string;
-  notFitNote: string;
-  goalOptionId: string | null;
-  goalText: string;
-  plan: Plan;
+  /** tạo một lần khi gửi lần đầu; gửi lại dùng cùng ID để không ghi trùng */
+  submissionId: string | null;
 }
-
-export const emptyPlan = (): Plan => ({
-  situation: '',
-  behavior: '',
-  count: null,
-  usefulSignal: '',
-  feedbackPerson: '',
-  reviewDate: '',
-  notes: '',
-});
 
 export const emptySession = (): Session => ({
-  consentAcknowledged: false,
-  setting: null,
-  displayName: '',
+  consentAt: null,
+  participant: { fullName: '', department: '', title: '' },
   answers: {},
-  startedAt: null,
-  completedAt: null,
-  reflections: {},
-  fitNote: '',
-  notFitNote: '',
-  goalOptionId: null,
-  goalText: '',
-  plan: emptyPlan(),
+  submissionId: null,
 });
 
-const text = (max = MAX_TEXT) => z.string().max(max);
-export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày phải có dạng YYYY-MM-DD');
-const questionId = z.enum(QUESTION_IDS as [string, ...string[]]);
-
-export const planSchema = z.strictObject({
-  situation: text(),
-  behavior: text(),
-  count: z.number().int().min(1).max(50).nullable(),
-  usefulSignal: text(),
-  feedbackPerson: text(MAX_NAME * 2),
-  reviewDate: z.union([z.literal(''), isoDate]),
-  notes: text(),
-});
-
-export const reflectionsSchema = z.partialRecord(questionId, z.enum(FITS));
-
-export function todayIso(now = new Date()): string {
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+/** Chuẩn hóa khoảng trắng; trả lỗi tiếng Việt cho trường bắt buộc. */
+export function normalizeText(s: string): string {
+  return s.replace(/\s+/g, ' ').trim();
 }
 
-export function addDaysIso(iso: string, days: number): string {
-  const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
-  const date = new Date(y, m - 1, d + days);
-  return todayIso(date);
+export interface ParticipantErrors {
+  fullName?: string;
+  department?: string;
+  title?: string;
 }
 
-export function formatDateVi(iso: string | null): string {
-  if (!iso) return '—';
-  const [y, m, d] = iso.slice(0, 10).split('-');
-  return `${d}/${m}/${y}`;
+export function validateParticipant(p: Participant): ParticipantErrors {
+  const errors: ParticipantErrors = {};
+  const name = normalizeText(p.fullName);
+  const dept = normalizeText(p.department);
+  if (name.length < 2) errors.fullName = 'Hãy nhập họ tên (ít nhất 2 ký tự).';
+  else if (name.length > MAX_NAME) errors.fullName = `Họ tên tối đa ${MAX_NAME} ký tự.`;
+  if (dept.length < 2) errors.department = 'Hãy nhập phòng ban.';
+  else if (dept.length > MAX_DEPARTMENT) errors.department = `Phòng ban tối đa ${MAX_DEPARTMENT} ký tự.`;
+  if (normalizeText(p.title).length > MAX_TITLE) errors.title = `Chức danh tối đa ${MAX_TITLE} ký tự.`;
+  return errors;
+}
+
+export function formatDateTimeVi(iso: string): string {
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat('vi-VN', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(d);
 }

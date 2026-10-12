@@ -1,220 +1,179 @@
 import { describe, expect, it } from 'vitest';
-import { QUESTIONS, QUESTION_IDS } from '../../src/domain/questionnaire';
+import {
+  CONTEXT_QUESTIONS,
+  DISC_QUESTIONS,
+  PAGE_COUNT,
+  QUESTIONNAIRE_VERSION,
+  QUESTIONS,
+  QUESTIONS_PER_PAGE,
+  QUESTION_IDS,
+} from '../../src/domain/questionnaire';
 import { scoreAnswers } from '../../src/domain/scoring';
-import { allScoredAnswersIdentical, formatScore, interpret } from '../../src/domain/interpretation';
+import { allDiscAnswersIdentical, formatScore, interpret } from '../../src/domain/interpretation';
+import { headline, preliminarySummary, selectEvidence } from '../../src/domain/narrative';
 import { DIMENSIONS, type AnswerMap } from '../../src/domain/types';
 import { allAnswers, answersByDimension, summaryFromScores } from './helpers';
 
 const evaluate = (answers: AnswerMap) => {
   const summary = scoreAnswers(answers);
-  return { summary, interpretation: interpret(summary, { allIdentical: allScoredAnswersIdentical(answers) }) };
+  return { summary, interpretation: interpret(summary, { allIdentical: allDiscAnswersIdentical(answers) }) };
 };
-const scoresOf = (answers: AnswerMap) => {
-  const { summary } = evaluate(answers);
-  return DIMENSIONS.map((d) => summary.dimensions[d].score);
-};
+const scoresOf = (answers: AnswerMap) => DIMENSIONS.map((d) => scoreAnswers(answers).dimensions[d].score);
 
-describe('bộ câu hỏi', () => {
-  it('có 32 câu, 8 câu mỗi nhóm, xen kẽ D/I/S/C, không đảo điểm', () => {
-    expect(QUESTIONS).toHaveLength(32);
-    expect(new Set(QUESTION_IDS).size).toBe(32);
-    for (const d of DIMENSIONS) expect(QUESTIONS.filter((q) => q.dimension === d)).toHaveLength(8);
-    QUESTIONS.forEach((q, i) => expect(q.dimension).toBe(DIMENSIONS[i % 4]));
-    expect(QUESTIONS.every((q) => q.reverse === false)).toBe(true);
+describe('bộ 30 câu', () => {
+  it('đúng 30 ID duy nhất, 24 câu DISC cân bằng 4 × 6, 6 câu không chấm', () => {
+    expect(QUESTIONNAIRE_VERSION).toBe('lamson-disc-30-vi-3.0.0');
+    expect(QUESTIONS).toHaveLength(30);
+    expect(new Set(QUESTION_IDS).size).toBe(30);
+    expect(DISC_QUESTIONS).toHaveLength(24);
+    for (const d of DIMENSIONS) expect(DISC_QUESTIONS.filter((q) => q.dimension === d)).toHaveLength(6);
+    expect(CONTEXT_QUESTIONS.map((q) => q.id)).toEqual(['L1', 'L2', 'L3', 'T1', 'T2', 'T3']);
+    expect(CONTEXT_QUESTIONS.every((q) => q.dimension === null && !q.scored)).toBe(true);
+  });
+
+  it('8 trang, 4 câu/trang, trang cuối 2 câu', () => {
+    expect(QUESTIONS_PER_PAGE).toBe(4);
+    expect(PAGE_COUNT).toBe(8);
+    expect(QUESTIONS.slice(7 * 4)).toHaveLength(2);
   });
 });
 
 describe('chấm điểm', () => {
-  it('tất cả 1 → bốn điểm 0 và flat', () => {
-    const { interpretation } = evaluate(allAnswers(1));
-    expect(scoresOf(allAnswers(1))).toEqual([0, 0, 0, 0]);
-    expect(interpretation.status).toBe('flat');
-    expect(interpretation.candidates).toEqual([]);
+  it('tất cả 1 → 0, tất cả 3 → 50, tất cả 5 → 100; đều flat và complete', () => {
+    for (const [v, s] of [
+      [1, 0],
+      [3, 50],
+      [5, 100],
+    ] as const) {
+      expect(scoresOf(allAnswers(v))).toEqual([s, s, s, s]);
+      const { interpretation } = evaluate(allAnswers(v));
+      expect(interpretation.pattern).toBe('flat');
+      expect(interpretation.dataStatus).toBe('complete');
+    }
   });
 
-  it('tất cả 3 → bốn điểm 50 và flat', () => {
-    expect(scoresOf(allAnswers(3))).toEqual([50, 50, 50, 50]);
-    expect(evaluate(allAnswers(3)).interpretation.status).toBe('flat');
+  it('bốn điểm không bị ép cộng thành 100', () => {
+    expect(scoresOf(allAnswers(5)).reduce((a, b) => (a ?? 0) + (b ?? 0), 0)).toBe(400);
   });
 
-  it('tất cả 5 → bốn điểm 100 và flat (điểm cao đồng thời vẫn hợp lệ)', () => {
-    expect(scoresOf(allAnswers(5))).toEqual([100, 100, 100, 100]);
-    expect(evaluate(allAnswers(5)).interpretation.status).toBe('flat');
+  it('6 câu phụ đều 5 không thay đổi điểm DISC', () => {
+    const base = answersByDimension({ D: 2, I: 3, S: 4, C: 1 }, [], 1);
+    const boosted = answersByDimension({ D: 2, I: 3, S: 4, C: 1 }, [], 5);
+    expect(scoresOf(boosted)).toEqual(scoresOf(base));
+    expect(evaluate(boosted).interpretation).toEqual(evaluate(base).interpretation);
   });
 
-  it('điểm bốn nhóm không bị ép cộng thành 100', () => {
-    const total = scoresOf(allAnswers(5)).reduce((a, b) => (a ?? 0) + (b ?? 0), 0);
-    expect(total).toBe(400);
+  it('6 câu phụ N/A hoặc thiếu không ảnh hưởng trạng thái đủ dữ liệu', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 1, S: 1, C: 1 }, ['L1', 'L2', 'L3', 'T1', 'T2', 'T3']));
+    expect(r.interpretation.dataStatus).toBe('complete');
   });
 
-  it('D=5, nhóm khác=1 → D100, còn lại 0, clearer', () => {
-    const answers = answersByDimension({ D: 5, I: 1, S: 1, C: 1 });
-    expect(scoresOf(answers)).toEqual([100, 0, 0, 0]);
-    const { interpretation } = evaluate(answers);
-    expect(interpretation.status).toBe('clearer');
-    expect(interpretation.candidates).toEqual(['D']);
+  it('D=5, nhóm khác=1 → clearer D', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 1, S: 1, C: 1 }));
+    expect(r.interpretation.pattern).toBe('clearer');
+    expect(r.interpretation.candidates).toEqual(['D']);
   });
 
-  it('D=I=5, S=C=1 → close_pair với hai nhóm đồng hạng', () => {
-    const { interpretation } = evaluate(answersByDimension({ D: 5, I: 5, S: 1, C: 1 }));
-    expect(interpretation.status).toBe('close_pair');
-    expect(interpretation.candidates).toEqual(['D', 'I']);
-    expect(interpretation.topTied).toEqual(['D', 'I']);
-  });
-
-  it('đồng hạng không ưu tiên D: I=C=5 vẫn giữ cả hai, theo thứ tự hiển thị', () => {
-    const { interpretation } = evaluate(answersByDimension({ D: 1, I: 5, S: 1, C: 5 }));
-    expect(interpretation.status).toBe('close_pair');
-    expect(interpretation.topTied).toEqual(['I', 'C']);
+  it('D=I=5 → close_pair đồng hạng; I=C=5 không ưu tiên D', () => {
+    const a = evaluate(answersByDimension({ D: 5, I: 5, S: 1, C: 1 })).interpretation;
+    expect(a.pattern).toBe('close_pair');
+    expect(a.topTied).toEqual(['D', 'I']);
+    const b = evaluate(answersByDimension({ D: 1, I: 5, S: 1, C: 5 })).interpretation;
+    expect(b.candidates).toEqual(['I', 'C']);
   });
 
   it('D=I=S=5, C=1 → multiple', () => {
-    const { interpretation } = evaluate(answersByDimension({ D: 5, I: 5, S: 5, C: 1 }));
-    expect(interpretation.status).toBe('multiple');
-    expect(interpretation.candidates).toEqual(['D', 'I', 'S']);
+    expect(evaluate(answersByDimension({ D: 5, I: 5, S: 5, C: 1 })).interpretation.pattern).toBe('multiple');
   });
 
-  it('n=6 mỗi nhóm → đủ dữ liệu (tổng 24, partial)', () => {
-    const skip = ['D1', 'D2', 'I1', 'I2', 'S1', 'S2', 'C1', 'C2'];
-    const { summary, interpretation } = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, skip));
-    expect(summary.answered).toBe(24);
-    expect(DIMENSIONS.map((d) => summary.dimensions[d].n)).toEqual([6, 6, 6, 6]);
-    expect(interpretation.status).toBe('clearer');
-    expect(interpretation.partial).toBe(true);
+  it('mỗi nhóm 5/6 (tổng 20) → partial, đủ để kết luận', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'I1', 'S1', 'C1']));
+    expect(r.summary.nDisc).toBe(20);
+    expect(r.interpretation.dataStatus).toBe('partial');
+    expect(r.interpretation.pattern).toBe('clearer');
   });
 
-  it('n=5 ở một nhóm → insufficient dù tổng ≥ 24', () => {
-    const { summary, interpretation } = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'D2', 'D3']));
-    expect(summary.answered).toBe(29);
-    expect(interpretation.status).toBe('insufficient');
-    expect(interpretation.missingDimensions).toEqual(['D']);
-    expect(interpretation.candidates).toEqual([]);
+  it('một nhóm chỉ 4 câu → insufficient dù tổng ≥ 20', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'D2']));
+    expect(r.summary.nDisc).toBe(22);
+    expect(r.interpretation.dataStatus).toBe('insufficient');
+    expect(r.interpretation.missingDimensions).toEqual(['D']);
+    expect(r.interpretation.candidates).toEqual([]);
   });
 
-  it('n ≥ 6 mỗi nhóm nhưng tổng < 24 không thể xảy ra; tổng < 24 → insufficient', () => {
-    const summary = summaryFromScores({ D: 80, I: 20, S: 20, C: 20 }, 5);
-    expect(interpret(summary).status).toBe('insufficient');
-  });
-
-  it('0 câu → không NaN, điểm null, insufficient', () => {
-    const { summary, interpretation } = evaluate({});
-    for (const d of DIMENSIONS) {
-      expect(summary.dimensions[d].n).toBe(0);
-      expect(summary.dimensions[d].score).toBeNull();
-      expect(summary.dimensions[d].mean).toBeNull();
-    }
-    expect(summary.unanswered).toBe(32);
-    expect(interpretation.status).toBe('insufficient');
-    expect(JSON.stringify(summary)).not.toContain('NaN');
-    expect(formatScore(null)).toBe('—');
-  });
-
-  it('N/A không bị tính thành 3', () => {
+  it('N/A không thành 3 và không tính vào n', () => {
     const answers = answersByDimension({ D: 5, I: 1, S: 1, C: 1 });
     answers.D1 = null;
-    answers.D2 = null;
-    const { summary } = evaluate(answers);
-    expect(summary.dimensions.D.n).toBe(6);
-    expect(summary.dimensions.D.total).toBe(30);
-    expect(summary.dimensions.D.score).toBe(100);
-    expect(summary.naCount).toBe(2);
-    expect(summary.answered).toBe(30);
+    const r = evaluate(answers);
+    expect(r.summary.dimensions.D.n).toBe(5);
+    expect(r.summary.dimensions.D.score).toBe(100);
+    expect(r.interpretation.dataStatus).toBe('partial');
   });
 
-  it('câu chưa trả lời không được tự điền', () => {
-    const answers = answersByDimension({ D: 4, I: 4, S: 4, C: 4 }, ['C8']);
-    const { summary } = evaluate(answers);
-    expect(summary.unanswered).toBe(1);
-    expect(summary.dimensions.C.n).toBe(7);
-    expect(summary.dimensions.C.total).toBe(28);
+  it('0 câu → điểm null, không NaN, insufficient', () => {
+    const r = evaluate({});
+    for (const d of DIMENSIONS) expect(r.summary.dimensions[d].score).toBeNull();
+    expect(JSON.stringify(r.summary)).not.toContain('NaN');
+    expect(r.interpretation.pattern).toBe('insufficient');
   });
 
-  it('từ chối giá trị không hợp lệ trong map đáp án thay vì bỏ qua', () => {
+  it('giá trị không hợp lệ trong map bị từ chối', () => {
     expect(() => scoreAnswers({ D1: 3.5 as never })).toThrow();
     expect(() => scoreAnswers({ D1: '4' as never })).toThrow();
   });
 });
 
 describe('ranh giới diễn giải', () => {
-  it('fixture D75, I65, S50, C25 giữ I trong candidates ở biên 10', () => {
-    const r = interpret(summaryFromScores({ D: 75, I: 65, S: 50, C: 25 }));
-    expect(r.status).toBe('close_pair');
-    expect(r.candidates).toEqual(['D', 'I']);
+  it('D75/I65/S50/C25: I ở biên 10 vẫn là ứng viên; 64,99 thì bị loại', () => {
+    expect(interpret(summaryFromScores({ D: 75, I: 65, S: 50, C: 25 })).candidates).toEqual(['D', 'I']);
+    expect(interpret(summaryFromScores({ D: 75, I: 64.99, S: 50, C: 25 })).candidates).toEqual(['D']);
+  });
+
+  it('range = 10 → flat; hơn 10 một chút → không flat', () => {
+    expect(interpret(summaryFromScores({ D: 60, I: 50, S: 55, C: 52 })).pattern).toBe('flat');
+    expect(interpret(summaryFromScores({ D: 60.01, I: 50, S: 55, C: 52 })).pattern).not.toBe('flat');
+  });
+
+  it('làm tròn hiển thị không tạo hay loại đồng hạng/ứng viên', () => {
+    const r = interpret(summaryFromScores({ D: 62.52, I: 62.48, S: 20, C: 20 }));
+    expect(formatScore(62.52)).toBe(formatScore(62.48));
     expect(r.topTied).toEqual(['D']);
+    expect(interpret(summaryFromScores({ D: 75.04, I: 65, S: 20, C: 20 })).candidates).toEqual(['D']);
+    expect(interpret(summaryFromScores({ D: 74.96, I: 65, S: 20, C: 20 })).candidates).toEqual(['D', 'I']);
   });
 
-  it('ngoài biên 10 (I = 64,99) → I bị loại, clearer', () => {
-    const r = interpret(summaryFromScores({ D: 75, I: 64.99, S: 50, C: 25 }));
-    expect(r.status).toBe('clearer');
-    expect(r.candidates).toEqual(['D']);
-  });
-
-  it('biên 10 chịu được sai số dấu phẩy động (0,1 + 0,2)', () => {
+  it('chịu được sai số dấu phẩy động ở biên', () => {
     const r = interpret(summaryFromScores({ D: 75 + (0.1 + 0.2 - 0.3), I: 65, S: 50, C: 25 }));
     expect(r.candidates).toEqual(['D', 'I']);
   });
 
-  it('range = 10 → flat, không nhóm chính/phụ', () => {
-    const r = interpret(summaryFromScores({ D: 60, I: 50, S: 55, C: 52 }));
-    expect(r.status).toBe('flat');
-    expect(r.range).toBe(10);
-    expect(r.candidates).toEqual([]);
-  });
-
-  it('range > 10 một chút → không flat', () => {
-    expect(interpret(summaryFromScores({ D: 60.01, I: 50, S: 55, C: 52 })).status).not.toBe('flat');
-  });
-
-  it('làm tròn hiển thị không tạo đồng hạng: 62,52 và 62,48 đều hiển thị 62,5 nhưng chỉ một nhóm là cao nhất', () => {
-    const r = interpret(summaryFromScores({ D: 62.52, I: 62.48, S: 20, C: 20 }));
-    expect(formatScore(62.52)).toBe(formatScore(62.48));
-    expect(r.topTied).toEqual(['D']);
-    expect(r.candidates).toEqual(['D', 'I']);
-  });
-
-  it('làm tròn hiển thị không loại ứng viên: khoảng cách 10,04 hiển thị như 10 nhưng vẫn bị loại; 10 đúng thì được giữ', () => {
-    const out = interpret(summaryFromScores({ D: 75.04, I: 65, S: 20, C: 20 }));
-    expect(formatScore(75.04)).toBe('75');
-    expect(out.candidates).toEqual(['D']);
-    const inside = interpret(summaryFromScores({ D: 74.96, I: 65, S: 20, C: 20 }));
-    expect(formatScore(74.96)).toBe('75');
-    expect(inside.candidates).toEqual(['D', 'I']);
-  });
-
-  it('điểm thật từ đáp án với n khác nhau: so sánh dùng độ chính xác đầy đủ', () => {
-    // D: 7 câu, tổng 26 → 25·19/7 = 67,857…; I: 8 câu, tổng 26 → 56,25 → khoảng cách 11,6 > 10.
-    const answers: AnswerMap = {};
-    const dVals = [5, 4, 4, 4, 3, 3, 3];
-    const iVals = [4, 4, 3, 3, 3, 3, 3, 3];
-    QUESTIONS.filter((q) => q.dimension === 'D').forEach((q, i) => {
-      if (i < 7) answers[q.id] = dVals[i] as 3 | 4 | 5;
-    });
-    QUESTIONS.filter((q) => q.dimension === 'I').forEach((q, i) => (answers[q.id] = iVals[i] as 3 | 4));
-    QUESTIONS.filter((q) => q.dimension === 'S' || q.dimension === 'C').forEach((q) => (answers[q.id] = 1));
-    const { summary, interpretation } = evaluate(answers);
-    expect(summary.dimensions.D.score).toBeCloseTo(67.857142857, 8);
-    expect(summary.dimensions.I.score).toBe(56.25);
-    expect(interpretation.candidates).toEqual(['D']);
-    expect(interpretation.partial).toBe(true);
-  });
-
-  it('định dạng hiển thị một chữ số thập phân kiểu Việt Nam', () => {
-    expect(formatScore(67.857142857)).toBe('67,9');
-    expect(formatScore(100)).toBe('100');
-    expect(formatScore(0)).toBe('0');
+  it('định dạng 1 chữ số thập phân kiểu Việt Nam', () => {
+    expect(formatScore((25 * 13) / 5)).toBe('65');
+    expect(formatScore(68.75)).toBe('68,8');
+    expect(formatScore(null)).toBe('—');
   });
 });
 
-describe('gợi ý rà soát', () => {
-  it('tất cả đáp án giống nhau → reviewSuggested', () => {
-    expect(evaluate(allAnswers(4)).interpretation.reviewSuggested).toBe(true);
-  });
-  it('đáp án khác nhau → không gợi ý rà soát', () => {
+describe('nhận xét và minh chứng', () => {
+  it('24 câu DISC giống nhau → mời rà soát; câu phụ không tính', () => {
+    const a = answersByDimension({ D: 4, I: 4, S: 4, C: 4 }, [], 1);
+    expect(evaluate(a).interpretation.reviewSuggested).toBe(true);
     expect(evaluate(answersByDimension({ D: 4, I: 3, S: 4, C: 4 })).interpretation.reviewSuggested).toBe(false);
   });
-  it('N/A không tính khi xét giống nhau', () => {
-    const a = allAnswers(2);
-    a.D1 = null;
-    expect(evaluate(a).interpretation.reviewSuggested).toBe(true);
+
+  it('tối đa 2 minh chứng từ câu DISC 4–5, sắp điểm rồi ID; câu L/T không bao giờ là minh chứng', () => {
+    const a = answersByDimension({ D: 3, I: 3, S: 3, C: 3 }, [], 5);
+    Object.assign(a, { S5: 5, D4: 5, C2: 4 });
+    expect(selectEvidence(a).map((e) => e.id)).toEqual(['D4', 'S5']);
+    expect(selectEvidence(answersByDimension({ D: 2, I: 2, S: 2, C: 2 }, [], 5))).toEqual([]);
+  });
+
+  it('nhận xét bắt đầu "Trong các câu trả lời này" và không có từ ngữ cấm', () => {
+    const r = evaluate(answersByDimension({ D: 1, I: 5, S: 1, C: 5 }));
+    const text = preliminarySummary(r.summary, r.interpretation);
+    expect(headline(r.interpretation)).toBe('Hai xu hướng gần nhau: I và C');
+    expect(text.startsWith('Trong các câu trả lời này')).toBe(true);
+    expect(text).toContain('với điểm bằng nhau');
+    expect(text).not.toMatch(/%|percentile|chắc chắn|tin cậy|coach/i);
   });
 });
