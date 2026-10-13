@@ -57,7 +57,7 @@ Khi **chưa cấu hình** `VITE_SUBMIT_URL`, app hiện rõ “Bản chạy th�
 
 Thư mục đích: `G:\My Drive\COACHING\DISC` = Drive folder `1iDOyMIg7XzcjvJ_3QQk8Nv9gFoxSgHOl`. Đường dẫn G: chỉ là nơi Drive đồng bộ trên máy tính; trình duyệt không ghi trực tiếp vào đó.
 
-1. Mở [thư mục DISC trên Google Drive](https://drive.google.com/drive/folders/1iDOyMIg7XzcjvJ_3QQk8Nv9gFoxSgHOl) bằng tài khoản của coach → **Mới → Google Trang tính**, đặt tên `LAM SON - DISC 30 cau - Ket qua`. Nếu đã có file trùng tên, hãy chọn đúng file muốn dùng; script không xóa file nào.
+1. Trang tính đã được tạo ngày 13/10/2026 trong thư mục DISC: [LAM SON - DISC 30 cau - Ket qua](https://docs.google.com/spreadsheets/d/1wrbWlPCAWJpkuqOOU4tjToTqwfhK_WdzEmVd6enju7k/edit) (ID lưu ở `spreadsheetId` trong schema), đã có sẵn 5 tab, tiêu đề cột, CAU_HOI và HUONG_DAN. Nếu cần tạo lại: trong thư mục → **Mới → Google Trang tính** với đúng tên trên; script không xóa file nào.
 2. Trong Sheet: **Tiện ích mở rộng → Apps Script**. Xóa nội dung mẫu, dán toàn bộ `apps-script/Code.gs`, bấm Lưu.
 3. Chọn hàm `setup` → **Chạy** → cấp quyền cho chính tài khoản của bạn. Script tạo 5 tab và tiêu đề cột, điền CAU_HOI và HUONG_DAN. Chạy lại không tạo trùng; tab cũ (ví dụ COACH_CA_NHAN) được giữ nguyên, script chỉ không ghi vào đó nữa.
 4. **Triển khai → Tùy chọn triển khai mới → Ứng dụng web**: *Thực thi với tư cách*: **Tôi**; *Người có quyền truy cập*: **Bất kỳ ai**. Sao chép URL kết thúc bằng `/exec`.
