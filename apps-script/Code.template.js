@@ -6,8 +6,9 @@
  * Cách dùng (chi tiết trong README):
  *   1. Mở Google Sheet trong thư mục COACHING/DISC → Tiện ích mở rộng → Apps Script.
  *   2. Dán toàn bộ Code.gs, lưu, chạy hàm setup() một lần (cấp quyền cho chính tài khoản của bạn).
- *   3. Triển khai → Ứng dụng web: Thực thi với tư cách "Tôi", Ai có quyền truy cập "Bất kỳ ai".
- *   4. Dán URL /exec vào biến VITE_SUBMIT_URL khi build app.
+ *   3. Thêm file HTML tên "Index" và dán apps-script/Index.html (trang khảo sát).
+ *   4. Triển khai → Ứng dụng web: Thực thi với tư cách "Tôi", Ai có quyền truy cập "Bất kỳ ai".
+ *      Mở URL /exec là thấy trang khảo sát.
  * Người làm khảo sát chỉ gửi được dữ liệu, không đọc được Sheet.
  */
 
@@ -345,8 +346,22 @@ function doPost(e) {
   return json_(handlePost_(e));
 }
 
-function doGet() {
-  return json_({ ok: true, service: 'lamson-disc-30', questionnaireVersion: QUESTIONNAIRE.version });
+/**
+ * Mở URL /exec: hiện trang khảo sát (file Index.html trong cùng dự án).
+ * ?status=1: chỉ trả trạng thái dịch vụ, không trả dữ liệu.
+ */
+function doGet(e) {
+  if (e && e.parameter && e.parameter.status) {
+    return json_({ ok: true, service: 'lamson-disc-30', questionnaireVersion: QUESTIONNAIRE.version });
+  }
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Lam Son · Khảo sát DISC 30 câu')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/** Trang khảo sát (chạy trong Apps Script) gọi hàm này qua google.script.run. */
+function submitSurvey(text) {
+  return handlePost_({ postData: { contents: typeof text === 'string' ? text : '' } });
 }
 
 // ---------- Thiết lập workbook ----------

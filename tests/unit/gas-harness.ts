@@ -68,7 +68,8 @@ export interface Gas {
   ss: FakeSpreadsheet;
   setup: () => string;
   doPost: (e: unknown) => { content: string };
-  doGet: () => { content: string };
+  doGet: (e?: unknown) => Record<string, unknown>;
+  submitSurvey: (text: unknown) => Record<string, unknown>;
   post: (body: unknown) => Record<string, unknown>;
   ctx: Record<string, unknown>;
 }
@@ -83,6 +84,12 @@ export function loadGas(): Gas {
     ContentService: {
       MimeType: { JSON: 'json' },
       createTextOutput: (content: string) => ({ content, setMimeType() { return this; } }),
+    },
+    HtmlService: {
+      createHtmlOutputFromFile: (name: string) => {
+        const out = { file: name, title: '', meta: [] as string[][], setTitle(t: string) { out.title = t; return out; }, addMetaTag(k: string, v: string) { out.meta.push([k, v]); return out; } };
+        return out;
+      },
     },
     PropertiesService: { getScriptProperties: () => ({ getProperty: () => null }) },
     Utilities: {
@@ -102,6 +109,7 @@ export function loadGas(): Gas {
     setup: ctx.setup as Gas['setup'],
     doPost,
     doGet: ctx.doGet as Gas['doGet'],
+    submitSurvey: ctx.submitSurvey as Gas['submitSurvey'],
     post: (body) =>
       JSON.parse(
         doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) } }).content,

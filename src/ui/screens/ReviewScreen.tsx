@@ -5,7 +5,7 @@ import { unansweredIds } from '../../domain/submission';
 import type { Question } from '../../domain/types';
 import { Actions, ScreenTitle } from '../components/common';
 import { SurveyProgress } from './SurveyScreen';
-import { SUBMIT_URL, type AppApi } from '../useAppState';
+import { canSubmit, type AppApi } from '../useAppState';
 
 export function ReviewScreen({ api }: { api: AppApi }) {
   const { session } = api.state;
@@ -105,7 +105,7 @@ export function ReviewScreen({ api }: { api: AppApi }) {
         </ol>
       </details>
 
-      {!SUBMIT_URL && (
+      {!canSubmit() && (
         <p className="notice notice-warn" data-testid="demo-mode">
           <strong>Bản chạy thử:</strong> chưa cấu hình địa chỉ Google Sheets, nên bấm Gửi chỉ hiện kết quả trên máy này và
           không gửi cho coach.

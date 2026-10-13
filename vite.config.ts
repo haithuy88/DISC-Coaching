@@ -11,7 +11,8 @@ const CSP =
 function contentSecurityPolicy(): Plugin {
   return {
     name: 'disc-lab-csp',
-    apply: 'build',
+    // Bản cho Apps Script (mode gas) nhúng script inline nên không gắn CSP này.
+    apply: (_config, env) => env.command === 'build' && env.mode !== 'gas',
     transformIndexHtml(html) {
       return html.replace(
         '<meta charset="UTF-8" />',

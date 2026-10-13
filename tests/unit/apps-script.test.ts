@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import sheetsSchema from '../../src/data/lamson-30.sheets-schema.json';
 import { allDiscAnswersIdentical, interpret } from '../../src/domain/interpretation';
@@ -168,11 +169,31 @@ describe('doPost: ghi bài nộp', () => {
     expect(row.Chuc_danh).toBe("'@abc");
   });
 
-  it('doGet chỉ trả trạng thái dịch vụ, không trả dữ liệu', () => {
+  it('doGet mở trang khảo sát (Index); ?status=1 chỉ trả trạng thái, không trả dữ liệu', () => {
     const gas = ready();
     gas.post(payload());
-    const res = JSON.parse(gas.doGet().content) as Record<string, unknown>;
+    const page = gas.doGet({ parameter: {} });
+    expect(page.file).toBe('Index');
+    expect(page.meta).toContainEqual(['viewport', 'width=device-width, initial-scale=1']);
+    const res = JSON.parse(String(gas.doGet({ parameter: { status: '1' } }).content)) as Record<string, unknown>;
     expect(Object.keys(res).sort()).toEqual(['ok', 'questionnaireVersion', 'service']);
+  });
+
+  it('submitSurvey (google.script.run) dùng cùng kiểm tra và ghi như doPost', () => {
+    const gas = ready();
+    const p = payload();
+    expect(receiptSchema.parse(gas.submitSurvey(JSON.stringify(p))).duplicate).toBe(false);
+    expect(receiptSchema.parse(gas.submitSurvey(JSON.stringify(p))).duplicate).toBe(true);
+    expect(gas.submitSurvey({ not: 'text' }).ok).toBe(false);
+    expect(dataRows(gas, 'KET_QUA')).toHaveLength(1);
+  });
+
+  it('Index.html: một file, không còn tham chiếu assets/, đúng phiên bản câu hỏi', () => {
+    const html = readFileSync('apps-script/Index.html', 'utf8');
+    expect(html).toContain('<div id="root"></div>');
+    expect(html).not.toMatch(/(src|href)="\.?\/?assets\//);
+    expect(html).not.toContain('@font-face');
+    expect(html).toContain('lamson-disc-30-vi-3.0.0');
   });
 });
 

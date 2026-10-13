@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { validateAnswerEntries } from '../../src/domain/answers';
 import { emptySession, validateParticipant, type Session } from '../../src/domain/session';
-import { buildPayload, submitToSheets, unansweredIds } from '../../src/domain/submission';
+import { buildPayload, submitToSheets, submitViaGoogleScript, unansweredIds } from '../../src/domain/submission';
 import { answersByDimension } from './helpers';
 
 const full = (): Session => ({
@@ -104,5 +104,32 @@ describe('gửi tới Apps Script', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: false, error: 'Phiên bản sai.' }))));
     const r = await submitToSheets('u', buildPayload(full()));
     expect(r).toEqual({ kind: 'rejected', message: 'Phiên bản sai.' });
+  });
+});
+
+describe('gửi qua google.script.run (trang chạy trong Apps Script)', () => {
+  const fakeRun = (respond: (text: string, ok: (v: unknown) => void, fail: (e: unknown) => void) => void) => {
+    let ok: (v: unknown) => void = () => undefined;
+    let fail: (e: unknown) => void = () => undefined;
+    const run = {
+      withSuccessHandler(fn: (v: unknown) => void) { ok = fn; return run; },
+      withFailureHandler(fn: (e: unknown) => void) { fail = fn; return run; },
+      submitSurvey(text: string) { respond(text, ok, fail); },
+    };
+    return run;
+  };
+
+  it('biên nhận hợp lệ → synced; lỗi tạm thời → network_error; từ chối → rejected; lỗi gọi → network_error', async () => {
+    const p = buildPayload(full());
+    const receipt = { ok: true, submissionId: p.submissionId, duplicate: false, receivedAt: 'x', nDisc: 24,
+      scores: { D: { n: 6, score: 75 }, I: { n: 6, score: 50 }, S: { n: 6, score: 25 }, C: { n: 6, score: 0 } },
+      dataStatus: 'complete', pattern: 'clearer', candidates: ['D'] };
+    let sent = '';
+    expect((await submitViaGoogleScript(fakeRun((t, ok) => { sent = t; ok(receipt); }), p)).kind).toBe('synced');
+    expect(JSON.parse(sent)).toEqual(p);
+    expect((await submitViaGoogleScript(fakeRun((_t, ok) => ok({ ok: false, retryable: true, error: 'x' })), p)).kind).toBe('network_error');
+    expect((await submitViaGoogleScript(fakeRun((_t, ok) => ok({ ok: false, error: 'Sai.' })), p))).toEqual({ kind: 'rejected', message: 'Sai.' });
+    expect((await submitViaGoogleScript(fakeRun((_t, _ok, fail) => fail(new Error('x'))), p)).kind).toBe('network_error');
+    expect((await submitViaGoogleScript(fakeRun(() => undefined), p, 20)).kind).toBe('network_error');
   });
 });

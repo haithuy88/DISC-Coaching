@@ -5,7 +5,9 @@ import { emptySession, type Session } from '../domain/session';
 import {
   buildPayload,
   newSubmissionId,
+  googleScriptRun,
   submitToSheets,
+  submitViaGoogleScript,
   summaryFromReceipt,
   type Receipt,
 } from '../domain/submission';
@@ -32,6 +34,9 @@ export interface AppState {
 
 /** URL web app Apps Script; trống = chế độ thử, không gửi đi đâu. */
 export const SUBMIT_URL: string = (import.meta.env.VITE_SUBMIT_URL ?? '').trim();
+
+/** Có nơi nhận bài: chạy trong Apps Script (google.script.run) hoặc có URL. Không có = chế độ chạy thử. */
+export const canSubmit = (): boolean => Boolean(googleScriptRun() || SUBMIT_URL);
 
 const initial = (): AppState => ({
   session: emptySession(),
@@ -64,14 +69,15 @@ export function useAppState() {
     if (sendingRef.current || current.submit.status === 'synced') return;
     const session = current.session.submissionId ? current.session : { ...current.session, submissionId: newSubmissionId() };
     const payload = buildPayload(session);
-    if (!SUBMIT_URL) {
+    const run = googleScriptRun();
+    if (!run && !SUBMIT_URL) {
       setState((st) => ({ ...st, session, screen: 'result', submit: { status: 'not_configured' } }));
       return;
     }
     sendingRef.current = true;
     setState((st) => ({ ...st, session, screen: 'result', submit: { status: 'sending' } }));
     try {
-      const result = await submitToSheets(SUBMIT_URL, payload);
+      const result = run ? await submitViaGoogleScript(run, payload) : await submitToSheets(SUBMIT_URL, payload);
       setState((st) => ({
         ...st,
         submit:

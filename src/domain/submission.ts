@@ -93,23 +93,56 @@ export async function submitToSheets(url: string, payload: SubmissionPayload, ti
     });
     if (!res.ok) return { kind: 'network_error', message: `Máy chủ trả mã ${res.status}.` };
     const data: unknown = await res.json().catch(() => null);
-    const okParsed = receiptSchema.safeParse(data);
-    if (okParsed.success) {
-      if (okParsed.data.submissionId !== payload.submissionId) {
-        return { kind: 'network_error', message: 'Biên nhận không khớp lần nộp.' };
-      }
-      return { kind: 'synced', receipt: okParsed.data };
-    }
-    const err = errorSchema.safeParse(data);
-    if (err.success) {
-      // Lỗi tạm thời khi ghi Sheets: cho phép gửi lại (cùng mã, không trùng).
-      return err.data.retryable ? { kind: 'network_error', message: err.data.error } : { kind: 'rejected', message: err.data.error };
-    }
-    return { kind: 'network_error', message: 'Phản hồi của máy chủ không đúng định dạng.' };
+    return interpretResponse(data, payload);
   } catch (e) {
     const aborted = e instanceof DOMException && e.name === 'AbortError';
     return { kind: 'network_error', message: aborted ? 'Hết thời gian chờ máy chủ.' : 'Không kết nối được máy chủ.' };
   } finally {
     clearTimeout(timer);
   }
+}
+
+interface GoogleScriptRun {
+  withSuccessHandler(fn: (value: unknown) => void): GoogleScriptRun;
+  withFailureHandler(fn: (error: unknown) => void): GoogleScriptRun;
+  submitSurvey(text: string): void;
+}
+
+/** Có khi trang đang chạy bên trong Apps Script web app (HtmlService). */
+export function googleScriptRun(): GoogleScriptRun | null {
+  const g = (globalThis as { google?: { script?: { run?: GoogleScriptRun } } }).google;
+  return g?.script?.run ?? null;
+}
+
+function interpretResponse(data: unknown, payload: SubmissionPayload): SubmitResult {
+  const okParsed = receiptSchema.safeParse(data);
+  if (okParsed.success) {
+    if (okParsed.data.submissionId !== payload.submissionId) {
+      return { kind: 'network_error', message: 'Biên nhận không khớp lần nộp.' };
+    }
+    return { kind: 'synced', receipt: okParsed.data };
+  }
+  const err = errorSchema.safeParse(data);
+  if (err.success) {
+    return err.data.retryable ? { kind: 'network_error', message: err.data.error } : { kind: 'rejected', message: err.data.error };
+  }
+  return { kind: 'network_error', message: 'Phản hồi của máy chủ không đúng định dạng.' };
+}
+
+/** Gửi qua google.script.run khi trang được phục vụ bởi Apps Script; cùng quy tắc biên nhận như gửi qua URL. */
+export function submitViaGoogleScript(run: GoogleScriptRun, payload: SubmissionPayload, timeoutMs = 30_000): Promise<SubmitResult> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (r: SubmitResult) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(r);
+    };
+    const timer = setTimeout(() => finish({ kind: 'network_error', message: 'Hết thời gian chờ máy chủ.' }), timeoutMs);
+    run
+      .withSuccessHandler((value) => finish(interpretResponse(value, payload)))
+      .withFailureHandler(() => finish({ kind: 'network_error', message: 'Không kết nối được máy chủ.' }))
+      .submitSurvey(JSON.stringify(payload));
+  });
 }

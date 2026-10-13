@@ -58,15 +58,16 @@ Khi **chưa cấu hình** `VITE_SUBMIT_URL`, app hiện rõ “Bản chạy th�
 Thư mục đích: `G:\My Drive\COACHING\DISC` = Drive folder `1iDOyMIg7XzcjvJ_3QQk8Nv9gFoxSgHOl`. Đường dẫn G: chỉ là nơi Drive đồng bộ trên máy tính; trình duyệt không ghi trực tiếp vào đó.
 
 1. Trang tính đã được tạo ngày 13/10/2026 trong thư mục DISC: [LAM SON - DISC 30 cau - Ket qua](https://docs.google.com/spreadsheets/d/1wrbWlPCAWJpkuqOOU4tjToTqwfhK_WdzEmVd6enju7k/edit) (ID lưu ở `spreadsheetId` trong schema), đã có sẵn 5 tab, tiêu đề cột, CAU_HOI và HUONG_DAN. Nếu cần tạo lại: trong thư mục → **Mới → Google Trang tính** với đúng tên trên; script không xóa file nào.
-2. Trong Sheet: **Tiện ích mở rộng → Apps Script**. Xóa nội dung mẫu, dán toàn bộ `apps-script/Code.gs`, bấm Lưu.
-3. Chọn hàm `setup` → **Chạy** → cấp quyền cho chính tài khoản của bạn. Script tạo 5 tab và tiêu đề cột, điền CAU_HOI và HUONG_DAN. Chạy lại không tạo trùng; tab cũ (ví dụ COACH_CA_NHAN) được giữ nguyên, script chỉ không ghi vào đó nữa.
-4. **Triển khai → Tùy chọn triển khai mới → Ứng dụng web**: *Thực thi với tư cách*: **Tôi**; *Người có quyền truy cập*: **Bất kỳ ai**. Sao chép URL kết thúc bằng `/exec`.
-   - “Bất kỳ ai” chỉ cho phép **gửi** bài; không ai đọc được Sheet qua URL này (hàm `doGet` chỉ trả trạng thái dịch vụ).
-5. Tạo file `.env` (xem `.env.example`) với `VITE_SUBMIT_URL=<URL /exec>`, rồi `npm run build`. Thư mục `dist/` là website tĩnh để đặt lên hosting tĩnh bất kỳ (việc chọn và đưa lên hosting do chủ dự án quyết định).
+2. Trong Sheet: **Tiện ích mở rộng → Apps Script**. Dán toàn bộ `apps-script/Code.gs` vào file `Mã.gs`. Bấm **Tệp → + → HTML**, đặt tên `Index`, dán toàn bộ `apps-script/Index.html` (trang khảo sát đã đóng gói thành một file). Lưu.
+3. Chọn hàm `setup` → **Chạy** → cấp quyền cho chính tài khoản của bạn (“Nâng cao → Đi tới … (không an toàn)” vì đây là mã của bạn, chưa qua Google duyệt). Script tạo/kiểm tra 5 tab; chạy lại không tạo trùng; tab cũ được giữ nguyên.
+4. **Triển khai → Tùy chọn triển khai mới → Ứng dụng web**: *Thực thi với tư cách*: **Tôi**; *Người có quyền truy cập*: **Bất kỳ ai**. URL `/exec` chính là **link khảo sát** gửi cho các trưởng phòng.
+   - Người mở link chỉ thấy trang khảo sát và gửi được bài; không đọc được Sheet. `…/exec?status=1` trả trạng thái dịch vụ.
+   - Bài nộp đi qua `google.script.run` → hàm `submitSurvey` (cùng kiểm tra và cách ghi như `doPost`).
+5. (Tùy chọn) Đặt app ở hosting tĩnh riêng: tạo `.env` với `VITE_SUBMIT_URL=<URL /exec>` rồi `npm run build`; thư mục `dist/` gửi bài qua `doPost`.
 6. Không chia sẻ Sheet công khai. Chỉ thêm quyền cho coach được chỉ định. Ẩn hoặc khóa tab **không** phải là kiểm soát truy cập.
 7. (Tùy chọn) Apps Script → Cài đặt dự án → Thuộc tính tập lệnh: `CAMPAIGN_ID` (mặc định `LAMSON-2026`).
 
-Khi sửa Code.gs: dán bản mới rồi **Triển khai → Quản lý triển khai → Chỉnh sửa → Phiên bản mới**; URL `/exec` giữ nguyên.
+Khi sửa app hoặc câu hỏi: `npm run build:gas` (sinh lại Code.gs và Index.html), dán cả hai file rồi **Triển khai → Quản lý triển khai → Chỉnh sửa → Phiên bản mới**; URL `/exec` giữ nguyên.
 
 **DANH_SACH**: coach tự nhập danh sách trưởng phòng dự kiến (`Participant_ID, Ho_ten, Phong_ban, Chuc_danh, Campaign_ID`) để biết ai chưa làm. `Participant_ID` trong KET_QUA = `P-` + 12 ký tự SHA-256 của “họ tên|phòng ban” (chữ thường), dùng để đối chiếu, không phải mã bí mật.
 
