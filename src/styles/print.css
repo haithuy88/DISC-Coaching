@@ -1,0 +1,52 @@
+/* Bản in / PDF: chỉ in nội dung báo cáo, không in nút hay điều khiển. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+    color: #1e293b;
+    font-size: 11pt;
+  }
+  .no-print,
+  button,
+  input,
+  details,
+  .skip-link {
+    display: none !important;
+  }
+  .app-shell {
+    max-width: none;
+    padding: 0;
+  }
+  .card,
+  .card-inner {
+    background: #fff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+  .screen-title {
+    display: none;
+  }
+  .report {
+    gap: 14px;
+  }
+  .report section,
+  .bar-row,
+  .report-list li,
+  .plan-list > div {
+    break-inside: avoid;
+  }
+  .bar-fill,
+  .progress-bar > span {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .eyebrow {
+    color: #2563eb;
+    background: none;
+  }
+}
