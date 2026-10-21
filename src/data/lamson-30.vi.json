@@ -1,0 +1,291 @@
+{
+  "version": "lamson-disc-30-vi-3.1.0",
+  "title": "Lam Son — Khảo sát DISC, leadership và làm việc nhóm",
+  "organization": "Lam Son",
+  "audience": "Trưởng phòng ban",
+  "language": "vi",
+  "status": "original-unvalidated",
+  "disclaimer": "Bộ câu hỏi tự biên soạn, chưa chuẩn hóa hoặc kiểm định tâm trắc. Kết quả hỗ trợ tự phản tư và trao đổi coaching; không dùng để chẩn đoán, tuyển dụng hoặc xếp hạng năng lực.",
+  "contextPrompt": "Trả lời theo hành vi thường gặp của chị/anh trong công việc tại Lam Son trong 3 tháng gần đây. Không có đáp án đúng hoặc sai.",
+  "scale": [
+    {
+      "value": 1,
+      "label": "Hầu như không giống tôi"
+    },
+    {
+      "value": 2,
+      "label": "Ít giống tôi"
+    },
+    {
+      "value": 3,
+      "label": "Đúng một phần / tùy tình huống"
+    },
+    {
+      "value": 4,
+      "label": "Khá giống tôi"
+    },
+    {
+      "value": 5,
+      "label": "Rất giống tôi"
+    },
+    {
+      "value": null,
+      "label": "Chưa có trải nghiệm / chưa thể trả lời"
+    }
+  ],
+  "questions": [
+    {
+      "id": "D1",
+      "dimension": "D",
+      "text": "Khi nhóm chưa có hướng đi, tôi chủ động đề xuất một quyết định.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "I1",
+      "dimension": "I",
+      "text": "Tôi dễ bắt đầu cuộc trò chuyện với người chưa quen.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "S1",
+      "dimension": "S",
+      "text": "Tôi kiên nhẫn lắng nghe khi người khác cần thời gian giải thích.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "C1",
+      "dimension": "C",
+      "text": "Tôi kiểm tra thông tin trước khi đưa ra kết luận.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "D2",
+      "dimension": "D",
+      "text": "Tôi nói rõ kết quả cần đạt trước khi bàn cách thực hiện.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "I2",
+      "dimension": "I",
+      "text": "Tôi diễn đạt ý tưởng bằng những ví dụ khiến người khác hứng thú.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "S2",
+      "dimension": "S",
+      "text": "Tôi cảm thấy thoải mái khi công việc có nhịp độ ổn định.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "C2",
+      "dimension": "C",
+      "text": "Tôi làm rõ tiêu chí chất lượng trước khi bắt đầu nhiệm vụ.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "D3",
+      "dimension": "D",
+      "text": "Tôi sẵn sàng nhận một nhiệm vụ có tính thử thách.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "I3",
+      "dimension": "I",
+      "text": "Tôi thích trình bày ý tưởng trước nhóm.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "S3",
+      "dimension": "S",
+      "text": "Tôi thường hỏi đồng đội cần hỗ trợ gì.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "C3",
+      "dimension": "C",
+      "text": "Tôi thường phát hiện chi tiết chưa nhất quán trong tài liệu.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "D4",
+      "dimension": "D",
+      "text": "Khi cần quyết định, tôi chọn một phương án dù chưa có đủ mọi thông tin.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "I4",
+      "dimension": "I",
+      "text": "Khi nhóm thiếu năng lượng, tôi chủ động khích lệ mọi người.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "S4",
+      "dimension": "S",
+      "text": "Tôi dành thời gian tìm hiểu ảnh hưởng của thay đổi đến mọi người.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "C4",
+      "dimension": "C",
+      "text": "Tôi so sánh các phương án bằng tiêu chí cụ thể.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "D5",
+      "dimension": "D",
+      "text": "Tôi trao đổi thẳng khi thấy một đề xuất khó đạt mục tiêu.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "I5",
+      "dimension": "I",
+      "text": "Tôi thường tìm cơ hội kết nối những người có thể hỗ trợ nhau.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "S5",
+      "dimension": "S",
+      "text": "Tôi coi trọng việc duy trì sự hợp tác lâu dài.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "C5",
+      "dimension": "C",
+      "text": "Tôi thích hướng dẫn có thông tin rõ ràng về yêu cầu công việc.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "D6",
+      "dimension": "D",
+      "text": "Tôi thích được tự quyết cách làm trong phạm vi trách nhiệm của mình.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "I6",
+      "dimension": "I",
+      "text": "Tôi suy nghĩ tốt hơn khi được trao đổi ý tưởng với người khác.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "S6",
+      "dimension": "S",
+      "text": "Tôi thích theo sát một nhiệm vụ cho đến khi hoàn tất.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "C6",
+      "dimension": "C",
+      "text": "Tôi dành thời gian kiểm tra sản phẩm trước khi bàn giao.",
+      "section": "DISC",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "L1",
+      "section": "Leadership",
+      "text": "Khi giao việc, tôi nói rõ phần việc người nhận được tự quyết.",
+      "dimension": "D",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "L2",
+      "section": "Leadership",
+      "text": "Khi nhân viên gặp khó khăn, tôi hỏi cách họ muốn giải quyết trước khi đưa ra chỉ dẫn.",
+      "dimension": "S",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "L3",
+      "section": "Leadership",
+      "text": "Khi phản hồi cho nhân viên, tôi nêu một hành vi cụ thể để trao đổi.",
+      "dimension": "C",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "T1",
+      "section": "Làm việc nhóm",
+      "text": "Khi cần hỗ trợ từ phòng khác, tôi trao đổi rõ kết quả mình cần nhận.",
+      "dimension": "D",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "T2",
+      "section": "Làm việc nhóm",
+      "text": "Trước khi thống nhất cách phối hợp, tôi hỏi về những khó khăn của bên còn lại.",
+      "dimension": "S",
+      "scored": true,
+      "reverse": false
+    },
+    {
+      "id": "T3",
+      "section": "Làm việc nhóm",
+      "text": "Sau cuộc họp nhóm, tôi xác nhận lại phần việc mình chịu trách nhiệm.",
+      "dimension": "C",
+      "scored": true,
+      "reverse": false
+    }
+  ],
+  "rules": {
+    "totalQuestions": 30,
+    "score": "25*(mean-1)",
+    "closeDelta": 10,
+    "flatRange": 10,
+    "noForcedType": true,
+    "thresholdStatus": "Quy ước MVP, chưa kiểm định tâm trắc",
+    "submission": "Chọn đáp án 1–5 hoặc N/A cho đủ 30 mục trước khi gửi; N/A không thành 3.",
+    "scoredQuestions": 30,
+    "minAnsweredShare": 0.75,
+    "minAnsweredTotal": 24,
+    "dimensionMapping": "Từ 3.1.0, cả 30 câu được chấm: 24 câu DISC gốc + L1,T1→D; L2,T2→S; L3,T3→C (I không có câu bổ sung). Mỗi nhóm cần ≥ 75% số câu có điểm (D/S/C 6/8, I 5/6) và tổng ≥ 24/30."
+  }
+}
