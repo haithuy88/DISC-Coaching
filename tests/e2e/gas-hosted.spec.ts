@@ -29,7 +29,8 @@ test('Index.html chạy như trong Apps Script: gửi qua google.script.run và 
 
   await page.getByRole('button', { name: 'Bắt đầu', exact: true }).click();
   await page.getByLabel(/Họ và tên/).fill('Trưởng Phòng Thử');
-  await page.getByLabel(/Phòng ban/).fill('Phòng Vận hành');
+  await page.getByLabel(/Phòng ban/).selectOption('Phòng Thu Mua');
+  await page.getByLabel(/Chức danh/).selectOption('Trưởng phòng');
   await page.getByRole('checkbox', { name: /Tôi đồng ý/ }).check();
   await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
   await answerAll(page, clearerD);

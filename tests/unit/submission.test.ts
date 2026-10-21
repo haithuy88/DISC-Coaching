@@ -8,18 +8,21 @@ const full = (): Session => ({
   ...emptySession(),
   consentAt: '2026-10-12T02:00:00.000Z',
   submissionId: 'abcdefab-1234-4abc-8def-1234567890ab',
-  participant: { fullName: '  Người   thử  ', department: 'Phòng thử', title: '' },
+  participant: { fullName: '  Người   thử  ', department: 'Phòng Kế Toán', title: 'Trưởng nhóm' },
   answers: answersByDimension({ D: 4, I: 3, S: 2, C: 1 }),
 });
 
 describe('thông tin người làm', () => {
-  it('họ tên và phòng ban bắt buộc; chức danh không bắt buộc', () => {
+  it('họ tên, phòng ban và chức danh bắt buộc; phòng ban/chức danh phải nằm trong danh sách', () => {
     expect(validateParticipant({ fullName: '', department: '', title: '' })).toEqual({
       fullName: expect.any(String),
       department: expect.any(String),
+      title: expect.any(String),
     });
-    expect(validateParticipant({ fullName: '   ', department: 'Kế toán', title: '' }).fullName).toBeDefined();
-    expect(validateParticipant({ fullName: 'An Bình', department: 'Kế toán', title: '' })).toEqual({});
+    expect(validateParticipant({ fullName: '   ', department: 'BGD', title: 'BGD' }).fullName).toBeDefined();
+    expect(validateParticipant({ fullName: 'An Bình', department: 'Kế toán', title: 'Nhân viên' }).department).toBeDefined();
+    expect(validateParticipant({ fullName: 'An Bình', department: 'Phòng Thu Mua', title: 'Giám đốc' }).title).toBeDefined();
+    expect(validateParticipant({ fullName: 'An Bình', department: 'Phòng Thu Mua', title: 'Nhân viên' })).toEqual({});
   });
 });
 

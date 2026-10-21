@@ -7,7 +7,7 @@ export function hasAnswer(answers: AnswerMap, id: string): boolean {
 }
 
 /**
- * Chấm 24 câu DISC (scored = true). 6 câu bổ sung không được cộng vào bất kỳ nhóm nào.
+ * Chấm mọi câu scored = true (bản 3.1.0: cả 30 câu; L/T đã được gán vào D/S/C).
  * Từng nhóm: n = số câu 1–5 (N/A và câu chưa trả lời không tính, không thay bằng 3),
  * mean = total / n, score = 25 × (mean − 1). n = 0 → null.
  */

@@ -15,6 +15,8 @@
 var QUESTIONNAIRE = /*__QUESTIONNAIRE__*/ null;
 var SHEETS_SCHEMA = /*__SHEETS_SCHEMA__*/ null;
 var CONSENT_VERSION = '/*__CONSENT_VERSION__*/';
+var DEPARTMENTS = /*__DEPARTMENTS__*/ [];
+var TITLES = /*__TITLES__*/ [];
 
 var DIMENSIONS = ['D', 'I', 'S', 'C'];
 var EPSILON = 1e-9;
@@ -89,8 +91,8 @@ function validatePayload_(p) {
   var department = cleanText_(part.department);
   var title = cleanText_(part.title);
   if (fullName.length < 2 || fullName.length > MAX_TEXT) return { ok: false, error: 'Họ tên là bắt buộc (2–80 ký tự).' };
-  if (department.length < 2 || department.length > MAX_TEXT) return { ok: false, error: 'Phòng ban là bắt buộc (2–80 ký tự).' };
-  if (title.length > MAX_TEXT) return { ok: false, error: 'Chức danh tối đa 80 ký tự.' };
+  if (DEPARTMENTS.indexOf(department) < 0) return { ok: false, error: 'Phòng ban không nằm trong danh sách.' };
+  if (TITLES.indexOf(title) < 0) return { ok: false, error: 'Chức danh không nằm trong danh sách.' };
 
   if (!Array.isArray(p.answers) || p.answers.length !== QUESTIONNAIRE.questions.length) {
     return { ok: false, error: 'Cần đủ ' + QUESTIONNAIRE.questions.length + ' câu trả lời.' };
@@ -123,10 +125,11 @@ function validatePayload_(p) {
 
 function scoreAnswers_(answers) {
   var dims = {};
-  DIMENSIONS.forEach(function (d) { dims[d] = { n: 0, total: 0 }; });
+  DIMENSIONS.forEach(function (d) { dims[d] = { n: 0, total: 0, itemCount: 0 }; });
   var nDisc = 0;
   QUESTIONNAIRE.questions.forEach(function (q) {
     if (!q.scored) return;
+    dims[q.dimension].itemCount += 1;
     var v = answers[q.id];
     if (typeof v !== 'number') return; // N/A hoặc thiếu: không tính, không thay bằng 3
     dims[q.dimension].n += 1;
@@ -136,23 +139,25 @@ function scoreAnswers_(answers) {
   var scores = {};
   DIMENSIONS.forEach(function (d) {
     var b = dims[d];
-    scores[d] = { n: b.n, score: b.n === 0 ? null : (25 * (b.total - b.n)) / b.n };
+    scores[d] = { n: b.n, itemCount: b.itemCount, score: b.n === 0 ? null : (25 * (b.total - b.n)) / b.n };
   });
   return { scores: scores, nDisc: nDisc };
 }
 
 function interpret_(scored, answers) {
   var r = QUESTIONNAIRE.rules;
-  var missing = DIMENSIONS.filter(function (d) { return scored.scores[d].n < r.minAnsweredPerDimension; });
+  var missing = DIMENSIONS.filter(function (d) {
+    return scored.scores[d].n < Math.ceil(r.minAnsweredShare * scored.scores[d].itemCount - 1e-9);
+  });
   var discValues = QUESTIONNAIRE.questions
     .filter(function (q) { return q.scored && typeof answers[q.id] === 'number'; })
     .map(function (q) { return answers[q.id]; });
   var allSame = discValues.length >= 2 && discValues.every(function (v) { return v === discValues[0]; });
-  var reviewSuggested = allSame && scored.nDisc >= r.minAnsweredDiscTotal;
-  if (missing.length > 0 || scored.nDisc < r.minAnsweredDiscTotal) {
+  var reviewSuggested = allSame && scored.nDisc >= r.minAnsweredTotal;
+  if (missing.length > 0 || scored.nDisc < r.minAnsweredTotal) {
     return { dataStatus: 'insufficient', pattern: 'insufficient', candidates: [], topTied: [], reviewSuggested: reviewSuggested };
   }
-  var dataStatus = scored.nDisc >= r.discQuestions ? 'complete' : 'partial';
+  var dataStatus = scored.nDisc >= r.scoredQuestions ? 'complete' : 'partial';
   var vals = DIMENSIONS.map(function (d) { return scored.scores[d].score; });
   var max = Math.max.apply(null, vals);
   var min = Math.min.apply(null, vals);
@@ -176,7 +181,7 @@ function summaryText_(scored, interp) {
     return arr.length <= 1 ? arr.join('') : arr.slice(0, -1).join(', ') + ' và ' + arr[arr.length - 1];
   };
   if (interp.pattern === 'insufficient') {
-    return 'Trong các câu trả lời này, chưa đủ câu có điểm để nhận xét xu hướng (cần ít nhất 5/6 câu mỗi nhóm và 20/24 câu DISC có điểm).';
+    return 'Trong các câu trả lời này, chưa đủ câu có điểm để nhận xét xu hướng (cần ít nhất 6/8 câu ở nhóm D, S, C, 5/6 câu ở nhóm I và 24/30 câu có điểm).';
   }
   var desc;
   if (interp.pattern === 'flat') desc = 'các xu hướng tương đối gần nhau, nên không có nhóm chính hay nhóm phụ';
@@ -369,8 +374,9 @@ function submitSurvey(text) {
 var GUIDE_ROWS = [
   ['Mục đích', 'Lưu bài khảo sát DISC 30 câu của trưởng phòng ban Lam Son để coach phân tích. Mỗi lần nộp là một dòng KET_QUA và một dòng TRA_LOI.'],
   ['Phiên bản', 'Bộ câu hỏi ' + (QUESTIONNAIRE ? QUESTIONNAIRE.version : '') + '; đồng ý ' + CONSENT_VERSION + '.'],
-  ['Cách chấm', 'Chỉ 24 câu DISC được chấm: điểm nhóm = 25 × (trung bình − 1), thang 0–100. N/A không tính thành 3. 6 câu L/T chỉ lưu đáp án, không cộng điểm.'],
-  ['Đủ dữ liệu', 'complete: 24/24 câu DISC có điểm; partial: 20–23 và mỗi nhóm ≥ 5; insufficient: còn lại.'],
+  ['Cách chấm', 'Từ bản 3.1.0 cả 30 câu được chấm: 24 câu DISC + L1,T1→D; L2,T2→S; L3,T3→C (D/S/C 8 câu, I 6 câu). Điểm nhóm = 25 × (trung bình − 1), thang 0–100. N/A không tính thành 3.'],
+  ['Đủ dữ liệu', 'complete: 30/30 câu có điểm; partial: 24–29 và mỗi nhóm ≥ 75% (D/S/C 6/8, I 5/6); insufficient: còn lại.'],
+  ['Phiên bản cũ', 'Dòng có Questionnaire_version lamson-disc-30-vi-3.0.0 được chấm theo 24 câu (6 câu L/T không tính điểm); không so trực tiếp với bản 3.1.0.'],
   ['Xu hướng', 'flat: chênh lệch cao nhất − thấp nhất ≤ 10; clearer/close_pair/multiple: các nhóm cách điểm cao nhất ≤ 10. Ngưỡng là quy ước, chưa kiểm định.'],
   ['Giới hạn', 'Bộ câu hỏi tự biên soạn, chưa chuẩn hóa tâm trắc. Không dùng để chẩn đoán, tuyển dụng, thưởng/phạt hay xếp hạng năng lực.'],
   ['Quyền truy cập', 'Chỉ coach được chỉ định mở workbook. Không chia sẻ công khai. Ẩn hoặc khóa tab không phải là kiểm soát truy cập.'],

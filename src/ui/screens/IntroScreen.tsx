@@ -10,7 +10,7 @@ export function IntroScreen({ api }: { api: AppApi }) {
         <p className="lead">{CONTEXT_PROMPT}</p>
         <ul className="facts">
           <li>
-            <strong>{QUESTIONS.length} câu trắc nghiệm</strong>: 24 câu về xu hướng hành vi và 6 câu về leadership, làm
+            <strong>{QUESTIONS.length} câu trắc nghiệm</strong> về xu hướng hành vi, leadership và làm
             việc nhóm. Chọn mức 1–5 hoặc “Chưa có trải nghiệm”.
           </li>
           <li>

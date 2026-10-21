@@ -15,11 +15,19 @@ test('luồng chính: thông tin bắt buộc → 30 câu → rà soát → gử
   await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
   const alert = page.getByRole('alert');
   await expect(alert).toContainText('Hãy nhập họ tên');
-  await expect(alert).toContainText('Hãy nhập phòng ban');
+  await expect(alert).toContainText('Hãy chọn phòng ban');
+  await expect(alert).toContainText('Hãy chọn chức danh');
   await expect(alert).toContainText('đánh dấu đồng ý');
   await expect(alert).toBeFocused();
   await page.getByLabel(/Họ và tên/).fill('Nguyễn Văn Thử');
-  await page.getByLabel(/Phòng ban/).fill('Phòng Kinh doanh');
+  await expect(page.getByLabel(/Phòng ban/).locator('option:not([disabled])')).toHaveText([
+    'Phòng Thu Mua', 'Phòng Kế Toán', 'Phòng Nhân Sự', 'Phòng KSNB', 'Phòng Kinh Doanh', 'BGD',
+  ]);
+  await expect(page.getByLabel(/Chức danh/).locator('option:not([disabled])')).toHaveText([
+    'Trưởng phòng', 'Trưởng nhóm', 'Nhân viên', 'BGD',
+  ]);
+  await page.getByLabel(/Phòng ban/).selectOption('Phòng Kinh Doanh');
+  await page.getByLabel(/Chức danh/).selectOption('Trưởng nhóm');
   await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
   await expect(page.getByRole('alert')).toContainText('đánh dấu đồng ý');
   await page.getByRole('checkbox', { name: /Tôi đồng ý gửi câu trả lời/ }).check();
@@ -41,12 +49,12 @@ test('luồng chính: thông tin bắt buộc → 30 câu → rà soát → gử
   await expect(page.getByTestId('score-I')).toHaveText('50');
   await expect(page.getByTestId('score-S')).toHaveText('25');
   await expect(page.getByTestId('score-C')).toHaveText('0');
-  await expect(page.getByTestId('table-n-D')).toHaveText('6/6');
+  await expect(page.getByTestId('table-n-D')).toHaveText('8/8');
   await expect(page.getByTestId('headline')).toHaveText('Xu hướng được thể hiện rõ hơn: D');
   await expect(page.getByTestId('summary')).toContainText('Trong các câu trả lời này');
   await expect(page.getByTestId('evidence-item')).toHaveCount(2);
   await expect(page.getByTestId('context-table').locator('tbody tr')).toHaveCount(6);
-  await expect(page.getByTestId('context-table')).toContainText('4 – Khá giống tôi');
+  await expect(page.getByTestId('context-table')).toContainText('5 – Rất giống tôi');
 
   // Không còn phần coaching, câu mở hay kế hoạch hành động
   await expect(page.locator('textarea')).toHaveCount(0);
@@ -58,7 +66,8 @@ test('luồng chính: thông tin bắt buộc → 30 câu → rà soát → gử
   expect(kq).toHaveLength(1);
   const row = Object.fromEntries(sheetsSchema.tabs.KET_QUA.map((h, i) => [h, kq[0]![i]]));
   expect(row.Ho_ten).toBe('Nguyễn Văn Thử');
-  expect(row.Phong_ban).toBe('Phòng Kinh doanh');
+  expect(row.Phong_ban).toBe('Phòng Kinh Doanh');
+  expect(row.Chuc_danh).toBe('Trưởng nhóm');
   expect(row.Score_D).toBe(100);
   expect(sheetRows(server, 'TRA_LOI')).toHaveLength(1);
 
@@ -163,7 +172,9 @@ test('bàn phím: điền thông tin và chọn đáp án không cần chuột',
   await page.getByLabel(/Họ và tên/).focus();
   await page.keyboard.type('Bàn Phím');
   await page.keyboard.press('Tab');
-  await page.keyboard.type('Phòng Phím');
+  await page.keyboard.type('BGD');
+  await page.keyboard.press('Tab');
+  await page.keyboard.type('Nhân');
   await page.getByRole('checkbox', { name: /Tôi đồng ý/ }).focus();
   await page.keyboard.press('Space');
   await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).focus();
@@ -188,7 +199,8 @@ for (const width of [320, 375]) {
     await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
     await expectNoHorizontalOverflow(page);
     await page.getByLabel(/Họ và tên/).fill('Người Rất Dài Tên Để Kiểm Tra Xuống Dòng Trên Màn Hình Hẹp');
-    await page.getByLabel(/Phòng ban/).fill('Phòng Chuỗi Cung Ứng Và Vận Hành Khu Vực Miền Bắc');
+    await page.getByLabel(/Phòng ban/).selectOption('Phòng Kinh Doanh');
+    await page.getByLabel(/Chức danh/).selectOption('Trưởng phòng');
     await page.getByRole('checkbox', { name: /Tôi đồng ý/ }).check();
     await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
     await expectNoHorizontalOverflow(page);

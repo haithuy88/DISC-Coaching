@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { toAnswerEntries, type AnswerEntry } from './answers';
-import { QUESTION_IDS, QUESTIONNAIRE_VERSION } from './questionnaire';
+import { DISC_QUESTIONS, ITEM_COUNT, QUESTION_IDS, QUESTIONNAIRE_VERSION } from './questionnaire';
 import { hasAnswer } from './scoring';
 import { CONSENT_VERSION, normalizeText, type Session } from './session';
 import { DIMENSIONS, type AnswerMap, type ScoreSummary } from './types';
@@ -41,7 +41,7 @@ export function buildPayload(session: Session): SubmissionPayload {
   };
 }
 
-const dimScore = z.object({ n: z.number().int().min(0).max(6), score: z.number().min(0).max(100).nullable() });
+const dimScore = z.object({ n: z.number().int().min(0).max(30), score: z.number().min(0).max(100).nullable() });
 
 /** Biên nhận từ Apps Script. Điểm trong biên nhận do máy chủ tính lại. */
 export const receiptSchema = z.object({
@@ -49,7 +49,7 @@ export const receiptSchema = z.object({
   submissionId: z.string().min(1),
   duplicate: z.boolean(),
   receivedAt: z.string(),
-  nDisc: z.number().int().min(0).max(24),
+  nDisc: z.number().int().min(0).max(30),
   scores: z.object({ D: dimScore, I: dimScore, S: dimScore, C: dimScore }),
   dataStatus: z.enum(['complete', 'partial', 'insufficient']),
   pattern: z.enum(['insufficient', 'flat', 'clearer', 'close_pair', 'multiple']),
@@ -70,10 +70,10 @@ export function summaryFromReceipt(r: Receipt): ScoreSummary {
     DIMENSIONS.map((d) => {
       const s = r.scores[d];
       const mean = s.score === null ? null : s.score / 25 + 1;
-      return [d, { dimension: d, n: s.n, itemCount: 6, total: mean === null ? 0 : Math.round(mean * s.n), mean, score: s.score }];
+      return [d, { dimension: d, n: s.n, itemCount: ITEM_COUNT[d], total: mean === null ? 0 : Math.round(mean * s.n), mean, score: s.score }];
     }),
   ) as ScoreSummary['dimensions'];
-  return { dimensions, nDisc: r.nDisc, discCount: 24 };
+  return { dimensions, nDisc: r.nDisc, discCount: DISC_QUESTIONS.length };
 }
 
 /**

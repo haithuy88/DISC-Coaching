@@ -7,6 +7,7 @@ import {
   QUESTIONS,
   QUESTIONS_PER_PAGE,
   QUESTION_IDS,
+  ITEM_COUNT,
 } from '../../src/domain/questionnaire';
 import { scoreAnswers } from '../../src/domain/scoring';
 import { allDiscAnswersIdentical, formatScore, interpret } from '../../src/domain/interpretation';
@@ -21,14 +22,14 @@ const evaluate = (answers: AnswerMap) => {
 const scoresOf = (answers: AnswerMap) => DIMENSIONS.map((d) => scoreAnswers(answers).dimensions[d].score);
 
 describe('bộ 30 câu', () => {
-  it('đúng 30 ID duy nhất, 24 câu DISC cân bằng 4 × 6, 6 câu không chấm', () => {
-    expect(QUESTIONNAIRE_VERSION).toBe('lamson-disc-30-vi-3.0.0');
+  it('đúng 30 ID duy nhất, cả 30 câu đều có điểm: D 8, I 6, S 8, C 8', () => {
+    expect(QUESTIONNAIRE_VERSION).toBe('lamson-disc-30-vi-3.1.0');
     expect(QUESTIONS).toHaveLength(30);
     expect(new Set(QUESTION_IDS).size).toBe(30);
-    expect(DISC_QUESTIONS).toHaveLength(24);
-    for (const d of DIMENSIONS) expect(DISC_QUESTIONS.filter((q) => q.dimension === d)).toHaveLength(6);
-    expect(CONTEXT_QUESTIONS.map((q) => q.id)).toEqual(['L1', 'L2', 'L3', 'T1', 'T2', 'T3']);
-    expect(CONTEXT_QUESTIONS.every((q) => q.dimension === null && !q.scored)).toBe(true);
+    expect(DISC_QUESTIONS).toHaveLength(30);
+    expect(ITEM_COUNT).toEqual({ D: 8, I: 6, S: 8, C: 8 });
+    for (const d of DIMENSIONS) expect(DISC_QUESTIONS.filter((q) => q.dimension === d)).toHaveLength(ITEM_COUNT[d]);
+    expect(CONTEXT_QUESTIONS.map((q) => `${q.id}:${q.dimension}`)).toEqual(['L1:D', 'L2:S', 'L3:C', 'T1:D', 'T2:S', 'T3:C']);
   });
 
   it('8 trang, 4 câu/trang, trang cuối 2 câu', () => {
@@ -56,16 +57,18 @@ describe('chấm điểm', () => {
     expect(scoresOf(allAnswers(5)).reduce((a, b) => (a ?? 0) + (b ?? 0), 0)).toBe(400);
   });
 
-  it('6 câu phụ đều 5 không thay đổi điểm DISC', () => {
-    const base = answersByDimension({ D: 2, I: 3, S: 4, C: 1 }, [], 1);
-    const boosted = answersByDimension({ D: 2, I: 3, S: 4, C: 1 }, [], 5);
-    expect(scoresOf(boosted)).toEqual(scoresOf(base));
-    expect(evaluate(boosted).interpretation).toEqual(evaluate(base).interpretation);
+  it('câu L/T được tính vào nhóm đã gộp', () => {
+    const base = answersByDimension({ D: 2, I: 3, S: 4, C: 1 });
+    const boosted = { ...base, L1: 5 as const, T1: 5 as const };
+    expect(scoreAnswers(boosted).dimensions.D.score).toBeGreaterThan(scoreAnswers(base).dimensions.D.score!);
+    expect(scoreAnswers(boosted).dimensions.S.score).toBe(scoreAnswers(base).dimensions.S.score);
   });
 
-  it('6 câu phụ N/A hoặc thiếu không ảnh hưởng trạng thái đủ dữ liệu', () => {
+  it('N/A ở 6 câu L/T: D, S, C còn 6/8 → partial, vẫn kết luận', () => {
     const r = evaluate(answersByDimension({ D: 5, I: 1, S: 1, C: 1 }, ['L1', 'L2', 'L3', 'T1', 'T2', 'T3']));
-    expect(r.interpretation.dataStatus).toBe('complete');
+    expect(r.summary.nDisc).toBe(24);
+    expect(r.interpretation.dataStatus).toBe('partial');
+    expect(r.interpretation.pattern).toBe('clearer');
   });
 
   it('D=5, nhóm khác=1 → clearer D', () => {
@@ -86,26 +89,38 @@ describe('chấm điểm', () => {
     expect(evaluate(answersByDimension({ D: 5, I: 5, S: 5, C: 1 })).interpretation.pattern).toBe('multiple');
   });
 
-  it('mỗi nhóm 5/6 (tổng 20) → partial, đủ để kết luận', () => {
-    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'I1', 'S1', 'C1']));
-    expect(r.summary.nDisc).toBe(20);
+  it('đúng ngưỡng 6/8, 5/6 (tổng 23 < 24) → insufficient vì thiếu tổng', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'D2', 'I1', 'S1', 'S2', 'C1', 'C2']));
+    expect(r.summary.nDisc).toBe(23);
+    expect(r.interpretation.dataStatus).toBe('insufficient');
+    expect(r.interpretation.missingDimensions).toEqual([]);
+  });
+
+  it('mỗi nhóm đủ ngưỡng và tổng 24 → partial, đủ để kết luận', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'I1', 'S1', 'S2', 'C1', 'C2']));
+    expect(r.summary.nDisc).toBe(24);
     expect(r.interpretation.dataStatus).toBe('partial');
     expect(r.interpretation.pattern).toBe('clearer');
   });
 
-  it('một nhóm chỉ 4 câu → insufficient dù tổng ≥ 20', () => {
-    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'D2']));
-    expect(r.summary.nDisc).toBe(22);
+  it('nhóm I chỉ 4/6 → insufficient dù tổng ≥ 24', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['I1', 'I2']));
+    expect(r.summary.nDisc).toBe(28);
     expect(r.interpretation.dataStatus).toBe('insufficient');
-    expect(r.interpretation.missingDimensions).toEqual(['D']);
+    expect(r.interpretation.missingDimensions).toEqual(['I']);
     expect(r.interpretation.candidates).toEqual([]);
+  });
+
+  it('nhóm D chỉ 5/8 → insufficient', () => {
+    const r = evaluate(answersByDimension({ D: 5, I: 2, S: 2, C: 2 }, ['D1', 'D2', 'L1']));
+    expect(r.interpretation.missingDimensions).toEqual(['D']);
   });
 
   it('N/A không thành 3 và không tính vào n', () => {
     const answers = answersByDimension({ D: 5, I: 1, S: 1, C: 1 });
     answers.D1 = null;
     const r = evaluate(answers);
-    expect(r.summary.dimensions.D.n).toBe(5);
+    expect(r.summary.dimensions.D.n).toBe(7);
     expect(r.summary.dimensions.D.score).toBe(100);
     expect(r.interpretation.dataStatus).toBe('partial');
   });
@@ -155,17 +170,17 @@ describe('ranh giới diễn giải', () => {
 });
 
 describe('nhận xét và minh chứng', () => {
-  it('24 câu DISC giống nhau → mời rà soát; câu phụ không tính', () => {
-    const a = answersByDimension({ D: 4, I: 4, S: 4, C: 4 }, [], 1);
+  it('30 câu giống nhau → mời rà soát', () => {
+    const a = answersByDimension({ D: 4, I: 4, S: 4, C: 4 });
     expect(evaluate(a).interpretation.reviewSuggested).toBe(true);
     expect(evaluate(answersByDimension({ D: 4, I: 3, S: 4, C: 4 })).interpretation.reviewSuggested).toBe(false);
   });
 
-  it('tối đa 2 minh chứng từ câu DISC 4–5, sắp điểm rồi ID; câu L/T không bao giờ là minh chứng', () => {
-    const a = answersByDimension({ D: 3, I: 3, S: 3, C: 3 }, [], 5);
-    Object.assign(a, { S5: 5, D4: 5, C2: 4 });
+  it('tối đa 2 minh chứng từ câu 4–5, sắp điểm rồi ID', () => {
+    const a = answersByDimension({ D: 3, I: 3, S: 3, C: 3 });
+    Object.assign(a, { S5: 5, D4: 5, C2: 4, L1: 4 });
     expect(selectEvidence(a).map((e) => e.id)).toEqual(['D4', 'S5']);
-    expect(selectEvidence(answersByDimension({ D: 2, I: 2, S: 2, C: 2 }, [], 5))).toEqual([]);
+    expect(selectEvidence(answersByDimension({ D: 2, I: 2, S: 2, C: 2 }))).toEqual([]);
   });
 
   it('nhận xét bắt đầu "Trong các câu trả lời này" và không có từ ngữ cấm', () => {

@@ -13,7 +13,7 @@ test('chụp màn hình chính', async ({ page }) => {
   await page.getByRole('button', { name: 'Bắt đầu', exact: true }).click();
   await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
   await shot('02-thong-tin-bat-buoc');
-  await identify(page, 'Người Mẫu', 'Phòng Mẫu');
+  await identify(page, 'Người Mẫu', 'Phòng Kinh Doanh', 'Trưởng nhóm');
   await page.locator('#question-1').getByRole('radio', { name: '4 – Khá giống tôi' }).check();
   await shot('03-khao-sat');
   await answerAll(page, (i) => (i === 9 ? 'skip' : i === 26 ? 'na' : clearerD(i)));

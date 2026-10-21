@@ -5,9 +5,13 @@ import { TEST_SUBMIT_URL } from './constants';
 const DIMS = ['D', 'I', 'S', 'C'] as const;
 export type Choice = 1 | 2 | 3 | 4 | 5 | 'na' | 'skip';
 
-/** Fixture tổng hợp chỉ dùng cho test: câu 1–24 xen kẽ D/I/S/C → D5, I3, S2, C1; câu 25–30 (L/T) = 4. */
+/** Câu 25–30 (L1, L2, L3, T1, T2, T3) đã gộp vào D, S, C, D, S, C. */
+const LT_DIMS = ['D', 'S', 'C', 'D', 'S', 'C'] as const;
+const CLEARER_D = { D: 5, I: 3, S: 2, C: 1 } as const;
+
+/** Fixture tổng hợp chỉ dùng cho test: mọi câu theo nhóm → D5, I3, S2, C1. */
 export const clearerD = (index: number): Choice =>
-  index < 24 ? ({ D: 5, I: 3, S: 2, C: 1 } as const)[DIMS[index % 4]!] : 4;
+  CLEARER_D[index < 24 ? DIMS[index % 4]! : LT_DIMS[index - 24]!];
 
 const SCALE_NAME: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: '1 – Hầu như không giống tôi',
@@ -44,11 +48,12 @@ export async function fakeSheetsServer(page: Page): Promise<FakeServer> {
 
 export const sheetRows = (server: FakeServer, tab: string) => server.gas.ss.tab(tab).rows.slice(1);
 
-export async function identify(page: Page, name = 'Người thử E2E', dept = 'Phòng kiểm thử') {
+export async function identify(page: Page, name = 'Người thử E2E', dept = 'Phòng Nhân Sự', title = 'Nhân viên') {
   await page.goto('/');
   await page.getByRole('button', { name: 'Bắt đầu', exact: true }).click();
   await page.getByLabel(/Họ và tên/).fill(name);
-  await page.getByLabel(/Phòng ban/).fill(dept);
+  await page.getByLabel(/Phòng ban/).selectOption(dept);
+  await page.getByLabel(/Chức danh/).selectOption(title);
   await page.getByRole('checkbox', { name: /Tôi đồng ý gửi câu trả lời/ }).check();
   await page.getByRole('button', { name: 'Bắt đầu khảo sát' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Mức độ giống bạn' })).toBeVisible();

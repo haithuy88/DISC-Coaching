@@ -1,8 +1,10 @@
 import type { AnswerMap } from './types';
 
 export const MAX_NAME = 80;
-export const MAX_DEPARTMENT = 80;
-export const MAX_TITLE = 80;
+
+/** Danh sách chọn theo yêu cầu của coach (sửa ở đây và chạy lại `npm run build:gas`). */
+export const DEPARTMENTS = ['Phòng Thu Mua', 'Phòng Kế Toán', 'Phòng Nhân Sự', 'Phòng KSNB', 'Phòng Kinh Doanh', 'BGD'] as const;
+export const TITLES = ['Trưởng phòng', 'Trưởng nhóm', 'Nhân viên', 'BGD'] as const;
 
 /** Phiên bản nội dung đồng ý gửi dữ liệu cho coach; đổi khi đổi nội dung thông báo. */
 export const CONSENT_VERSION = 'lamson-consent-1.0';
@@ -42,12 +44,10 @@ export interface ParticipantErrors {
 export function validateParticipant(p: Participant): ParticipantErrors {
   const errors: ParticipantErrors = {};
   const name = normalizeText(p.fullName);
-  const dept = normalizeText(p.department);
   if (name.length < 2) errors.fullName = 'Hãy nhập họ tên (ít nhất 2 ký tự).';
   else if (name.length > MAX_NAME) errors.fullName = `Họ tên tối đa ${MAX_NAME} ký tự.`;
-  if (dept.length < 2) errors.department = 'Hãy nhập phòng ban.';
-  else if (dept.length > MAX_DEPARTMENT) errors.department = `Phòng ban tối đa ${MAX_DEPARTMENT} ký tự.`;
-  if (normalizeText(p.title).length > MAX_TITLE) errors.title = `Chức danh tối đa ${MAX_TITLE} ký tự.`;
+  if (!(DEPARTMENTS as readonly string[]).includes(p.department)) errors.department = 'Hãy chọn phòng ban.';
+  if (!(TITLES as readonly string[]).includes(p.title)) errors.title = 'Hãy chọn chức danh.';
   return errors;
 }
 

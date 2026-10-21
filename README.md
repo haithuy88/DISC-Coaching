@@ -6,8 +6,9 @@
 
 ## Phạm vi
 
-- Luồng: **Mở đầu → Thông tin (họ tên, phòng ban bắt buộc; chức danh tùy chọn) + đồng ý gửi cho coach → 30 câu (4 câu/trang, trang cuối 2 câu) → Rà soát → Gửi → Kết quả sơ bộ.**
-- 30 câu = 24 câu DISC (6 câu mỗi nhóm D/I/S/C) + 3 câu leadership + 3 câu làm việc nhóm. Thang 1–5 và N/A riêng. Không chọn sẵn đáp án. Phải chọn đủ 30 câu mới gửi được.
+- Luồng: **Mở đầu → Thông tin (họ tên, phòng ban, chức danh đều bắt buộc; phòng ban và chức danh chọn từ danh sách) + đồng ý gửi cho coach → 30 câu (4 câu/trang, trang cuối 2 câu) → Rà soát → Gửi → Kết quả sơ bộ.**
+- 30 câu đều được chấm: 24 câu DISC (6 câu mỗi nhóm) + 6 câu leadership/làm việc nhóm gộp vào nhóm gần nhất (L1, T1 → D; L2, T2 → S; L3, T3 → C), nên D, S, C có 8 câu, I có 6 câu. Thang 1–5 và N/A riêng.
+- Danh sách chọn (sửa ở `src/domain/session.ts`, rồi `npm run build:gas`): **Phòng ban** — Phòng Thu Mua, Phòng Kế Toán, Phòng Nhân Sự, Phòng KSNB, Phòng Kinh Doanh, BGD; **Chức danh** — Trưởng phòng, Trưởng nhóm, Nhân viên, BGD. Không chọn sẵn đáp án. Phải chọn đủ 30 câu mới gửi được.
 - Kết quả sơ bộ: bốn điểm, số câu có điểm từng nhóm, một nhận xét ngắn, tối đa 2 phát biểu được chấm 4–5, bảng lựa chọn của 6 câu bổ sung, trạng thái ghi Sheets.
 - **Không có** coaching, câu hỏi mở, kế hoạch hành động, gợi ý coach, đánh giá nguồn lực hay xếp hạng trong app/Sheets. Phần đánh giá nguồn lực công ty và đề xuất phương án coach được làm riêng **sau khi đã có dữ liệu thật**.
 
@@ -90,9 +91,9 @@ Prompt gốc mô tả máy chủ Node + SQLite/PostgreSQL, outbox, worker đồn
 
 ## Công thức chấm điểm
 
-- Chỉ 24 câu `scored: true`. Mỗi nhóm: `n` = số câu 1–5 (N/A và câu thiếu không tính, **không** thay bằng 3); `mean = total / n`; `score = 25 × (mean − 1)`, 0–100; `n = 0` → không có điểm.
+- Cả 30 câu `scored: true`. Mỗi nhóm: `n` = số câu 1–5 (N/A và câu thiếu không tính, **không** thay bằng 3); `mean = total / n`; `score = 25 × (mean − 1)`, 0–100; `n = 0` → không có điểm.
 - 6 câu L1–L3, T1–T3: chỉ lưu đáp án gốc, không cộng điểm, không tạo điểm năng lực.
-- **complete**: 24/24 câu DISC có điểm; **partial**: 20–23 và mỗi nhóm ≥ 5; **insufficient**: còn lại (không nhận xét xu hướng).
+- **complete**: 30/30 câu có điểm; **partial**: ≥ 24/30 và mỗi nhóm ≥ 75% số câu (D, S, C ≥ 6/8; I ≥ 5/6); **insufficient**: còn lại (không nhận xét xu hướng).
 - **flat** nếu cao nhất − thấp nhất ≤ 10. Ngược lại, ứng viên = mọi nhóm cách điểm cao nhất ≤ 10, giữ đồng hạng: 1 → clearer, 2 → close_pair, 3 → multiple. So sánh trên điểm chưa làm tròn, sai số 1e-9; chỉ làm tròn 1 chữ số khi hiển thị.
 - Mọi câu DISC có điểm cùng một mức → lời mời rà soát thân thiện, không cáo buộc.
 - Không percentile, không độ tin cậy; bốn điểm không cộng thành 100. Các ngưỡng là quy ước MVP, chưa kiểm định.
@@ -111,5 +112,5 @@ Prompt gốc mô tả máy chủ Node + SQLite/PostgreSQL, outbox, worker đồn
 
 ## Kiểm thử hiện có
 
-- **Unit (57)**: 30 ID / 24 câu DISC cân bằng 4 × 6 / 6 câu không chấm; tất cả 1/3/5 → 0/50/100; 6 câu phụ đổi giá trị không đổi điểm DISC; 5/6 mỗi nhóm → partial, một nhóm 4 → insufficient; biên 10, đồng hạng, làm tròn, N/A, giá trị xấu; payload, gửi lại, lỗi mạng; Apps Script: setup 5 tab không trùng, giữ tab cũ, tiêu đề lệch, ghi đúng cột, trùng mã, xung đột, 403/429, ghi một phần, timeout sau khi ghi, chặn công thức, payload xấu (bản 32 câu, 29 câu, ID trùng/lạ, chuỗi, 3.5, 6, NaN/Infinity, `__proto__`, quá lớn), so khớp chấm điểm app và máy chủ.
+- **Unit (65)**: 30 ID, cả 30 câu có điểm (D 8, I 6, S 8, C 8); tất cả 1/3/5 → 0/50/100; câu L/T tính vào nhóm đã gộp; ngưỡng 6/8, 5/6 và 24/30; phòng ban/chức danh ngoài danh sách bị từ chối; biên 10, đồng hạng, làm tròn, N/A, giá trị xấu; payload, gửi lại, lỗi mạng; Apps Script: setup 5 tab không trùng, giữ tab cũ, tiêu đề lệch, ghi đúng cột, trùng mã, xung đột, 403/429, ghi một phần, timeout sau khi ghi, chặn công thức, payload xấu (bản 32 câu, 29 câu, ID trùng/lạ, chuỗi, 3.5, 6, NaN/Infinity, `__proto__`, quá lớn), so khớp chấm điểm app và máy chủ.
 - **E2E (9, màn hình 375 px và 320 px)**: luồng đầy đủ tới Sheet, thông tin bắt buộc, không gửi trước khi bấm Gửi, quay lại giữ đáp án, trang cuối 2 câu, rà soát chặn gửi khi thiếu, lỗi mạng rồi gửi lại không trùng, Google lỗi một tab rồi gửi lại, máy chủ từ chối, bàn phím, không tràn ngang, không có giao diện coaching/câu mở.

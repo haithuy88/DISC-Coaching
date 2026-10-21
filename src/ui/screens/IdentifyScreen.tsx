@@ -1,8 +1,8 @@
 import { useId, useRef, useState } from 'react';
 import {
-  MAX_DEPARTMENT,
+  DEPARTMENTS,
   MAX_NAME,
-  MAX_TITLE,
+  TITLES,
   validateParticipant,
   type Participant,
   type ParticipantErrors,
@@ -62,21 +62,18 @@ export function IdentifyScreen({ api }: { api: AppApi }) {
           error={errors.fullName}
           onChange={(v) => set({ fullName: v })}
         />
-        <TextField
+        <SelectField
           id={`${id}-dept`}
           label="Phòng ban"
-          required
-          autoComplete="organization-title"
-          max={MAX_DEPARTMENT}
+          options={DEPARTMENTS}
           value={participant.department}
           error={errors.department}
           onChange={(v) => set({ department: v })}
         />
-        <TextField
+        <SelectField
           id={`${id}-title`}
-          label="Chức danh (không bắt buộc)"
-          autoComplete="off"
-          max={MAX_TITLE}
+          label="Chức danh"
+          options={TITLES}
           value={participant.title}
           error={errors.title}
           onChange={(v) => set({ title: v })}
@@ -155,6 +152,54 @@ function TextField({
         aria-describedby={error ? `${id}-err` : undefined}
         onChange={(e) => onChange(e.target.value)}
       />
+      {error && (
+        <p id={`${id}-err`} className="field-error">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SelectField({
+  id,
+  label,
+  options,
+  value,
+  error,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  options: readonly string[];
+  value: string;
+  error?: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="field">
+      <label htmlFor={id} className="field-label">
+        {label}
+        <span className="required"> (bắt buộc)</span>
+      </label>
+      <select
+        id={id}
+        className="input select"
+        required
+        value={value}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-err` : undefined}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="" disabled>
+          — Chọn {label.toLowerCase()} —
+        </option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
       {error && (
         <p id={`${id}-err`} className="field-error">
           {error}

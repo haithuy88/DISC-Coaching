@@ -1,5 +1,5 @@
 {
-  "version": "lamson-disc-30-vi-3.0.0",
+  "version": "lamson-disc-30-vi-3.1.0",
   "title": "Lam Son — Khảo sát DISC, leadership và làm việc nhóm",
   "organization": "Lam Son",
   "audience": "Trưởng phòng ban",
@@ -230,57 +230,62 @@
       "id": "L1",
       "section": "Leadership",
       "text": "Khi giao việc, tôi nói rõ phần việc người nhận được tự quyết.",
-      "dimension": null,
-      "scored": false
+      "dimension": "D",
+      "scored": true,
+      "reverse": false
     },
     {
       "id": "L2",
       "section": "Leadership",
       "text": "Khi nhân viên gặp khó khăn, tôi hỏi cách họ muốn giải quyết trước khi đưa ra chỉ dẫn.",
-      "dimension": null,
-      "scored": false
+      "dimension": "S",
+      "scored": true,
+      "reverse": false
     },
     {
       "id": "L3",
       "section": "Leadership",
       "text": "Khi phản hồi cho nhân viên, tôi nêu một hành vi cụ thể để trao đổi.",
-      "dimension": null,
-      "scored": false
+      "dimension": "C",
+      "scored": true,
+      "reverse": false
     },
     {
       "id": "T1",
       "section": "Làm việc nhóm",
       "text": "Khi cần hỗ trợ từ phòng khác, tôi trao đổi rõ kết quả mình cần nhận.",
-      "dimension": null,
-      "scored": false
+      "dimension": "D",
+      "scored": true,
+      "reverse": false
     },
     {
       "id": "T2",
       "section": "Làm việc nhóm",
       "text": "Trước khi thống nhất cách phối hợp, tôi hỏi về những khó khăn của bên còn lại.",
-      "dimension": null,
-      "scored": false
+      "dimension": "S",
+      "scored": true,
+      "reverse": false
     },
     {
       "id": "T3",
       "section": "Làm việc nhóm",
       "text": "Sau cuộc họp nhóm, tôi xác nhận lại phần việc mình chịu trách nhiệm.",
-      "dimension": null,
-      "scored": false
+      "dimension": "C",
+      "scored": true,
+      "reverse": false
     }
   ],
   "rules": {
     "totalQuestions": 30,
-    "discQuestions": 24,
-    "itemsPerDimension": 6,
-    "minAnsweredPerDimension": 5,
-    "minAnsweredDiscTotal": 20,
     "score": "25*(mean-1)",
     "closeDelta": 10,
     "flatRange": 10,
     "noForcedType": true,
     "thresholdStatus": "Quy ước MVP, chưa kiểm định tâm trắc",
-    "contextItems": "6 câu leadership/làm việc nhóm chỉ ghi nhận đáp án riêng, không cộng vào DISC và không tạo điểm năng lực.",
-    "submission": "Chọn đáp án1–5 hoặc N/A cho đủ30 mục trước khi gửi; N/A không thành3. Số câu có điểm tính riêng cho24 câuDISC."
+    "submission": "Chọn đáp án 1–5 hoặc N/A cho đủ 30 mục trước khi gửi; N/A không thành 3.",
+    "scoredQuestions": 30,
+    "minAnsweredShare": 0.75,
+    "minAnsweredTotal": 24,
+    "dimensionMapping": "Từ 3.1.0, cả 30 câu được chấm: 24 câu DISC gốc + L1,T1→D; L2,T2→S; L3,T3→C (I không có câu bổ sung). Mỗi nhóm cần ≥ 75% số câu có điểm (D/S/C 6/8, I 5/6) và tổng ≥ 24/30."
   }
 }

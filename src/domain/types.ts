@@ -10,18 +10,18 @@ export type AnswerMap = Partial<Record<string, AnswerValue>>;
 
 export interface Question {
   id: string;
-  /** null với 6 câu bổ sung (leadership / làm việc nhóm) */
-  dimension: Dimension | null;
+  dimension: Dimension;
   section: string;
-  /** chỉ 24 câu DISC được chấm */
+  /** từ bản 3.1.0 cả 30 câu đều được chấm */
   scored: boolean;
   text: string;
 }
 
 export interface ScoringRules {
-  itemsPerDimension: number;
-  minAnsweredPerDimension: number;
-  minAnsweredDiscTotal: number;
+  /** tỉ lệ câu có điểm tối thiểu của mỗi nhóm (0.75 → 6/8, 5/6) */
+  minAnsweredShare: number;
+  /** tổng số câu có điểm tối thiểu */
+  minAnsweredTotal: number;
   closeDelta: number;
   flatRange: number;
 }
@@ -40,12 +40,12 @@ export interface DimensionScore {
 
 export interface ScoreSummary {
   dimensions: Record<Dimension, DimensionScore>;
-  /** số câu DISC có điểm */
+  /** số câu có điểm (trên tổng số câu được chấm) */
   nDisc: number;
   discCount: number;
 }
 
-/** complete: 24/24 câu DISC có điểm; partial: 20–23 và đủ từng nhóm; insufficient: còn lại. */
+/** complete: 30/30 câu có điểm; partial: 24–29 và đủ từng nhóm; insufficient: còn lại. */
 export type DataStatus = 'complete' | 'partial' | 'insufficient';
 export type PatternStatus = 'insufficient' | 'flat' | 'clearer' | 'close_pair' | 'multiple';
 

@@ -100,7 +100,7 @@ export function ResultsScreen({ api }: { api: AppApi }) {
 
           <div className="card stack">
             <h2>Leadership và làm việc nhóm</h2>
-            <p className="muted small">6 câu này chỉ ghi nhận lựa chọn của bạn, không cộng vào điểm và không chấm năng lực.</p>
+            <p className="muted small">Lựa chọn của bạn ở 6 câu này cũng được tính vào điểm xu hướng ở trên; đây không phải điểm năng lực.</p>
             <div className="table-wrap">
               <table className="score-table" data-testid="context-table">
                 <thead>
@@ -129,7 +129,8 @@ export function ResultsScreen({ api }: { api: AppApi }) {
 
           <Limitations />
           <p className="muted small">
-            Số câu DISC có điểm: {summary.nDisc}/24 ({DIMENSIONS.map((d) => `${d} ${summary.dimensions[d].n}/6`).join(', ')}).
+            Số câu có điểm: {summary.nDisc}/{summary.discCount} (
+            {DIMENSIONS.map((d) => `${d} ${summary.dimensions[d].n}/${summary.dimensions[d].itemCount}`).join(', ')}).
           </p>
         </>
       )}

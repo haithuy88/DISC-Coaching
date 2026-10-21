@@ -9,7 +9,13 @@ const read = (p) => readFileSync(join(root, p), 'utf8');
 
 const questionnaire = JSON.parse(read('src/data/lamson-30.vi.json'));
 const schema = JSON.parse(read('src/data/lamson-30.sheets-schema.json'));
-const consent = /CONSENT_VERSION = '([^']+)'/.exec(read('src/domain/session.ts'))?.[1];
+const sessionSrc = read('src/domain/session.ts');
+const consent = /CONSENT_VERSION = '([^']+)'/.exec(sessionSrc)?.[1];
+const listOf = (name) => {
+  const m = new RegExp(`export const ${name} = (\\[[^\\]]*\\]) as const;`).exec(sessionSrc);
+  if (!m) throw new Error(`Không tìm thấy ${name} trong src/domain/session.ts`);
+  return JSON.parse(m[1].replace(/'/g, '"'));
+};
 if (!consent) throw new Error('Không tìm thấy CONSENT_VERSION trong src/domain/session.ts');
 
 const lean = {
@@ -22,9 +28,9 @@ const lean = {
     text: q.text,
   })),
   rules: {
-    discQuestions: questionnaire.rules.discQuestions,
-    minAnsweredPerDimension: questionnaire.rules.minAnsweredPerDimension,
-    minAnsweredDiscTotal: questionnaire.rules.minAnsweredDiscTotal,
+    scoredQuestions: questionnaire.rules.scoredQuestions,
+    minAnsweredShare: questionnaire.rules.minAnsweredShare,
+    minAnsweredTotal: questionnaire.rules.minAnsweredTotal,
     closeDelta: questionnaire.rules.closeDelta,
     flatRange: questionnaire.rules.flatRange,
   },
@@ -33,7 +39,9 @@ const lean = {
 const out = read('apps-script/Code.template.js')
   .replace('/*__QUESTIONNAIRE__*/ null', JSON.stringify(lean, null, 2))
   .replace('/*__SHEETS_SCHEMA__*/ null', JSON.stringify({ version: schema.version, tabs: schema.tabs }, null, 2))
-  .replace('/*__CONSENT_VERSION__*/', consent);
+  .replace('/*__CONSENT_VERSION__*/', consent)
+  .replace('/*__DEPARTMENTS__*/ []', JSON.stringify(listOf('DEPARTMENTS')))
+  .replace('/*__TITLES__*/ []', JSON.stringify(listOf('TITLES')));
 
 const target = join(root, 'apps-script/Code.gs');
 if (process.argv.includes('--check')) {

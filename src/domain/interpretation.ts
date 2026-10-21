@@ -1,4 +1,4 @@
-import { DISC_QUESTIONS, RULES } from './questionnaire';
+import { DISC_QUESTIONS, RULES, minAnsweredFor } from './questionnaire';
 import { DIMENSIONS, type AnswerMap, type Dimension, type Interpretation, type ScoreSummary, type ScoringRules } from './types';
 
 /** Sai số cho so sánh ranh giới trên số thực (ví dụ đúng bằng 10 điểm). */
@@ -11,7 +11,7 @@ export interface InterpretOptions {
   allIdentical?: boolean;
 }
 
-/** Mọi câu DISC có điểm (bỏ qua N/A và 6 câu bổ sung) cùng một giá trị. Cần ít nhất 2 câu. */
+/** Mọi câu có điểm (bỏ qua N/A) cùng một giá trị. Cần ít nhất 2 câu. */
 export function allDiscAnswersIdentical(answers: AnswerMap): boolean {
   const values = DISC_QUESTIONS.map((q) => answers[q.id]).filter((v): v is 1 | 2 | 3 | 4 | 5 => typeof v === 'number');
   return values.length >= 2 && values.every((v) => v === values[0]);
@@ -19,17 +19,19 @@ export function allDiscAnswersIdentical(answers: AnswerMap): boolean {
 
 /**
  * Quy ước MVP (chưa kiểm định tâm trắc):
- * - insufficient: có nhóm n < 5 hoặc tổng câu DISC có điểm < 20.
- * - complete: đủ 24/24; partial: 20–23 và đủ từng nhóm.
+ * - insufficient: có nhóm dưới 75% số câu có điểm (D/S/C < 6/8, I < 5/6) hoặc tổng < 24/30.
+ * - complete: đủ 30/30; partial: 24–29 và đủ từng nhóm.
  * - flat: max − min ≤ 10. Còn lại: candidates = mọi nhóm max − score ≤ 10, giữ đồng hạng.
  * So sánh trên điểm chưa làm tròn; thứ tự D/I/S/C chỉ để hiển thị.
  */
 export function interpret(summary: ScoreSummary, options: InterpretOptions = {}): Interpretation {
   const rules = options.rules ?? RULES;
-  const missingDimensions = DIMENSIONS.filter((d) => summary.dimensions[d].n < rules.minAnsweredPerDimension);
-  const reviewSuggested = Boolean(options.allIdentical) && summary.nDisc >= rules.minAnsweredDiscTotal;
+  const missingDimensions = DIMENSIONS.filter(
+    (d) => summary.dimensions[d].n < minAnsweredFor(summary.dimensions[d].itemCount, rules),
+  );
+  const reviewSuggested = Boolean(options.allIdentical) && summary.nDisc >= rules.minAnsweredTotal;
 
-  if (missingDimensions.length > 0 || summary.nDisc < rules.minAnsweredDiscTotal) {
+  if (missingDimensions.length > 0 || summary.nDisc < rules.minAnsweredTotal) {
     return { dataStatus: 'insufficient', pattern: 'insufficient', candidates: [], topTied: [], range: null, reviewSuggested, missingDimensions };
   }
   const dataStatus = summary.nDisc >= summary.discCount ? 'complete' : 'partial';

@@ -46,7 +46,7 @@ function describe(interpretation: Interpretation): string {
 export function preliminarySummary(summary: ScoreSummary, interpretation: Interpretation): string {
   const scores = DIMENSIONS.map((d) => `${d} ${formatScore(summary.dimensions[d].score)}`).join(', ');
   if (interpretation.pattern === 'insufficient') {
-    return `Trong các câu trả lời này, ${describe(interpretation)} (cần ít nhất 5/6 câu mỗi nhóm và 20/24 câu DISC có điểm).`;
+    return `Trong các câu trả lời này, ${describe(interpretation)} (cần ít nhất 6/8 câu ở nhóm D, S, C, 5/6 câu ở nhóm I và 24/30 câu có điểm).`;
   }
   const partial = interpretation.dataStatus === 'partial' ? ' Đây là kết quả tạm thời từ các câu đã có điểm.' : '';
   return (

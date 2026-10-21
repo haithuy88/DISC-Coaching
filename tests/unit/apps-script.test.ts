@@ -18,7 +18,7 @@ function session(answers: AnswerMap, overrides: Partial<Session['participant']> 
     ...emptySession(),
     consentAt: '2026-10-12T02:00:00.000Z',
     submissionId: '11111111-2222-4333-8444-555555555555',
-    participant: { fullName: 'Người thử A', department: 'Phòng thử nghiệm', title: '', ...overrides },
+    participant: { fullName: 'Người thử A', department: 'Phòng KSNB', title: 'Nhân viên', ...overrides },
     answers,
   };
 }
@@ -45,7 +45,7 @@ describe('setup()', () => {
     for (const t of TABS) expect(gas.ss.tab(t).rows[0]).toEqual(sheetsSchema.tabs[t]);
     const q = dataRows(gas, 'CAU_HOI');
     expect(q).toHaveLength(30);
-    expect(q.filter((r) => r[4] === 'TRUE')).toHaveLength(24);
+    expect(q.filter((r) => r[4] === 'TRUE')).toHaveLength(30);
     expect(q.find((r) => r[1] === 'L1')?.[2]).toBe('Leadership');
     expect(dataRows(gas, 'HUONG_DAN').length).toBeGreaterThan(3);
     expect(dataRows(gas, 'DANH_SACH')).toHaveLength(0);
@@ -79,19 +79,20 @@ describe('doPost: ghi bài nộp', () => {
     const res = gas.post(payload(answers, { title: 'Trưởng phòng' }));
     const receipt = receiptSchema.parse(res);
     expect(receipt.duplicate).toBe(false);
-    expect(receipt.scores.D).toEqual({ n: 6, score: 100 });
+    expect(receipt.scores.D).toEqual({ n: 8, score: 100 });
+    expect(receipt.scores.S).toEqual({ n: 7, score: 25 });
     expect(receipt.pattern).toBe('clearer');
 
     const kq = dataRows(gas, 'KET_QUA');
     expect(kq).toHaveLength(1);
     const row = Object.fromEntries(sheetsSchema.tabs.KET_QUA.map((h, i) => [h, kq[0]![i]]));
     expect(row.Ho_ten).toBe('Người thử A');
-    expect(row.Phong_ban).toBe('Phòng thử nghiệm');
+    expect(row.Phong_ban).toBe('Phòng KSNB');
     expect(row.Chuc_danh).toBe('Trưởng phòng');
-    expect(row.Questionnaire_version).toBe('lamson-disc-30-vi-3.0.0');
-    expect(row.N_DISC).toBe(24);
+    expect(row.Questionnaire_version).toBe('lamson-disc-30-vi-3.1.0');
+    expect(row.N_DISC).toBe(29);
     expect([row.Score_D, row.Score_I, row.Score_S, row.Score_C]).toEqual([100, 50, 25, 0]);
-    expect(row.Data_status).toBe('complete');
+    expect(row.Data_status).toBe('partial');
     expect(row.Candidate_groups).toBe('D');
     expect(String(row.Preliminary_summary)).toMatch(/^Trong các câu trả lời này/);
     expect(String(row.Participant_ID)).toMatch(/^P-[0-9a-f]{12}$/);
@@ -101,7 +102,7 @@ describe('doPost: ghi bài nộp', () => {
     const ans = Object.fromEntries(sheetsSchema.tabs.TRA_LOI.map((h, i) => [h, tl[0]![i]]));
     expect(ans.D1).toBe(5);
     expect(ans.C6).toBe(1);
-    expect(ans.L1).toBe(3);
+    expect(ans.L1).toBe(5);
     expect(ans.L2).toBe('N/A');
   });
 
@@ -162,11 +163,10 @@ describe('doPost: ghi bài nộp', () => {
 
   it('chặn công thức: tên bắt đầu bằng = + - @ được ghi như văn bản', () => {
     const gas = ready();
-    gas.post(payload(undefined, { fullName: '=HYPERLINK("http://x","bấm")', department: '+Phòng', title: '@abc' }));
+    gas.post(payload(undefined, { fullName: '=HYPERLINK("http://x","bấm")' }));
     const row = Object.fromEntries(sheetsSchema.tabs.KET_QUA.map((h, i) => [h, dataRows(gas, 'KET_QUA')[0]![i]]));
     expect(row.Ho_ten).toBe('\'=HYPERLINK("http://x","bấm")');
-    expect(row.Phong_ban).toBe("'+Phòng");
-    expect(row.Chuc_danh).toBe("'@abc");
+    expect(row.Phong_ban).toBe('Phòng KSNB');
   });
 
   it('doGet mở trang khảo sát (Index); ?status=1 chỉ trả trạng thái, không trả dữ liệu', () => {
@@ -193,7 +193,7 @@ describe('doPost: ghi bài nộp', () => {
     expect(html).toContain('<div id="root"></div>');
     expect(html).not.toMatch(/(src|href)="\.?\/?assets\//);
     expect(html).not.toContain('@font-face');
-    expect(html).toContain('lamson-disc-30-vi-3.0.0');
+    expect(html).toContain('lamson-disc-30-vi-3.1.0');
   });
 });
 
@@ -210,6 +210,9 @@ describe('doPost: từ chối dữ liệu xấu, không ghi gì', () => {
     ['giá trị 0', (p) => ({ ...p, answers: [{ id: 'D1', value: 0 }, ...p.answers.slice(1)] })],
     ['thiếu họ tên', (p) => ({ ...p, participant: { ...p.participant, fullName: ' ' } })],
     ['thiếu phòng ban', (p) => ({ ...p, participant: { ...p.participant, department: '' } })],
+    ['phòng ban ngoài danh sách', (p) => ({ ...p, participant: { ...p.participant, department: '+Phòng' } })],
+    ['thiếu chức danh', (p) => ({ ...p, participant: { ...p.participant, title: '' } })],
+    ['chức danh ngoài danh sách', (p) => ({ ...p, participant: { ...p.participant, title: '@abc' } })],
     ['trường thừa (điểm do client gửi)', (p) => ({ ...p, scores: { D: 100 } })],
     ['phiên bản đồng ý sai', (p) => ({ ...p, consentVersion: 'x' })],
     ['mã lần nộp sai', (p) => ({ ...p, submissionId: '../../x' })],
