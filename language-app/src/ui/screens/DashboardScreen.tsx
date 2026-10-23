@@ -11,6 +11,7 @@ import { DailyGoal, LevelBadge, SkillBars } from '../components';
 export function DashboardScreen({
   language,
   profile,
+  aiEnabled,
   onOpenLesson,
   onChat,
   onReview,
@@ -20,6 +21,7 @@ export function DashboardScreen({
 }: {
   language: LanguageInfo;
   profile: LearnerProfile;
+  aiEnabled: boolean;
   onOpenLesson: (unitId: string, lessonId: string) => void;
   onChat: (scenario: Scenario) => void;
   onReview: () => void;
@@ -32,7 +34,7 @@ export function DashboardScreen({
   const [trackId, setTrackId] = useState<TrackId>(tracks[0]!.track.id);
   const units = course ? unitsFor(course, profile.level, trackId) : [];
   const scenarios = scenariosFor(profile.level, trackId);
-  const readyFor = levelUpReady(profile, course);
+  const readyFor = levelUpReady(profile, course, aiEnabled);
   const dueCards = dueReviewKeys(profile).length;
 
   return (
@@ -91,7 +93,7 @@ export function DashboardScreen({
             <span className="icon">{track.icon}</span>
             <strong>{track.nameVi}</strong>
             <span className="muted small">
-              {!unlocked ? `🔒 Mở từ ${track.minLevel}` : unitCount ? `${unitCount} unit` : 'Hội thoại AI'}
+              {!unlocked ? `🔒 Mở từ ${track.minLevel}` : unitCount ? `${unitCount} unit` : aiEnabled ? 'Hội thoại AI' : 'Sắp có bài'}
             </span>
           </button>
         ))}
@@ -100,7 +102,7 @@ export function DashboardScreen({
       <h2>Bài học</h2>
       {units.length === 0 ? (
         <p className="muted">
-          Chưa có bài soạn sẵn cho chuyên ngành này ở level của bạn. Hãy luyện các tình huống hội thoại bên dưới — AI tự điều chỉnh theo level.
+          Chưa có bài soạn sẵn cho chuyên ngành này ở level của bạn. {aiEnabled ? 'Hãy luyện các tình huống hội thoại bên dưới — AI tự điều chỉnh theo level.' : 'Bài cho chuyên ngành này đang được soạn.'}
         </p>
       ) : (
         <div className="list">
@@ -124,19 +126,23 @@ export function DashboardScreen({
         </div>
       )}
 
+      {aiEnabled && (
+        <>
       <h2>Hội thoại thực chiến</h2>
-      <div className="list">
-        {scenarios.map((s) => (
-          <button key={s.title} type="button" className="card lesson-row" onClick={() => onChat(s)}>
-            <span className="pill">{s.minLevel}+</span>
-            <span>
-              <strong>{s.title}</strong>
-              <span className="muted small"> · Mục tiêu: {s.goal}</span>
-            </span>
-            <span>💬</span>
-          </button>
-        ))}
-      </div>
+          <div className="list">
+            {scenarios.map((s) => (
+              <button key={s.title} type="button" className="card lesson-row" onClick={() => onChat(s)}>
+                <span className="pill">{s.minLevel}+</span>
+                <span>
+                  <strong>{s.title}</strong>
+                  <span className="muted small"> · Mục tiêu: {s.goal}</span>
+                </span>
+                <span>💬</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 // Điểm vào của Apps Script web app. scripts/build-gas.mjs đóng gói file này thành apps-script/Code.gs.
 import { ApiRequestSchema, type ApiResponse } from '../shared/api.ts';
-import { UserFacingError, chat, grade } from './claude.ts';
+import { UserFacingError, aiEnabled, chat, grade } from './claude.ts';
 import { TZ, fillMissingCodes, findUser, loadProfiles, logAi, saveProfile, setupSheets, type User } from './sheets.ts';
 
 /** Đếm lượt gọi AI theo ngày trong Script Properties; trả về false nếu đã vượt giới hạn. */
@@ -44,7 +44,7 @@ function handle(raw: string): unknown {
 
   switch (req.action) {
     case 'login':
-      return { name: user.name, group: user.group, profiles: loadProfiles(user.code) };
+      return { name: user.name, group: user.group, aiEnabled: aiEnabled(), profiles: loadProfiles(user.code) };
     case 'saveProgress':
       withLock(() => saveProfile(user, req.payload));
       return { saved: true };
@@ -52,6 +52,8 @@ function handle(raw: string): unknown {
     case 'grade': {
       const p = req.payload;
       const kind = req.action === 'chat' ? 'Hội thoại' : `Chấm ${req.payload.skill}`;
+      // Kiểm tra trước khi trừ lượt, để không tính lượt khi AI đang tắt.
+      if (!aiEnabled()) throw new UserFacingError('Tính năng AI đang tắt.');
       if (!withLock(() => takeQuota(user))) {
         throw new UserFacingError(`Bạn đã dùng hết ${user.dailyLimit} lượt AI hôm nay. Mai học tiếp nhé!`);
       }

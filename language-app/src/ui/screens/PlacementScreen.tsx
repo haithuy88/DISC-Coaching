@@ -15,11 +15,13 @@ const GENERIC_WRITING_TASK = 'Write as much as you can (3–8 sentences) about y
 export function PlacementScreen({
   language,
   code,
+  aiEnabled,
   onDone,
   onBack,
 }: {
   language: LanguageInfo;
   code: string;
+  aiEnabled: boolean;
   onDone: (level: Level, placement?: { objectiveLevel?: Level; writingLevel?: Level }) => void;
   onBack: () => void;
 }) {
@@ -66,17 +68,21 @@ export function PlacementScreen({
         <h1>
           {language.flag} {language.nameVi}: xác định trình độ
         </h1>
-        <div className="card">
-          <h3>Làm bài test xếp lớp (khuyên dùng)</h3>
-          <p className="muted">
-            {test
-              ? `${test.questions.length} câu trắc nghiệm (có câu nghe) từ dễ đến khó, sau đó viết một đoạn ngắn để AI đánh giá. Khoảng 10 phút.`
-              : 'Viết một đoạn ngắn, AI sẽ đánh giá trình độ. Khoảng 5 phút.'}
-          </p>
-          <button type="button" className="btn primary" onClick={() => setStage(test ? 'questions' : 'writing')}>
-            Bắt đầu test
-          </button>
-        </div>
+        {(test || aiEnabled) && (
+          <div className="card">
+            <h3>Làm bài test xếp lớp (khuyên dùng)</h3>
+            <p className="muted">
+              {!test
+                ? 'Viết một đoạn ngắn, AI sẽ đánh giá trình độ. Khoảng 5 phút.'
+                : aiEnabled
+                  ? `${test.questions.length} câu trắc nghiệm (có câu nghe) từ dễ đến khó, sau đó viết một đoạn ngắn để AI đánh giá. Khoảng 10 phút.`
+                  : `${test.questions.length} câu trắc nghiệm (có câu nghe) từ dễ đến khó. Khoảng 7 phút.`}
+            </p>
+            <button type="button" className="btn primary" onClick={() => setStage(test ? 'questions' : 'writing')}>
+              Bắt đầu test
+            </button>
+          </div>
+        )}
         <div className="card">
           <h3>Hoặc tự chọn level</h3>
           <div className="chips">
@@ -132,7 +138,8 @@ export function PlacementScreen({
               onClick={() => {
                 if (!isLast) return setIndex(index + 1);
                 setObjective(scorePlacement(test.questions, answers));
-                setStage('writing');
+                // Phần viết cần AI chấm; khi AI tắt, xếp lớp chỉ theo trắc nghiệm.
+                setStage(aiEnabled ? 'writing' : 'result');
               }}
             >
               {isLast ? 'Xong phần trắc nghiệm' : 'Tiếp'}

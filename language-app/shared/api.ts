@@ -129,6 +129,8 @@ export type ApiRequest = z.input<typeof ApiRequestSchema>;
 export const LoginResultSchema = z.object({
   name: z.string(),
   group: z.string(),
+  /** Quản trị đã cài API key chưa. Chưa cài thì app ẩn các phần cần AI. */
+  aiEnabled: z.boolean(),
   profiles: z.record(z.string(), ProfileSchema),
 });
 export type LoginResult = z.infer<typeof LoginResultSchema>;

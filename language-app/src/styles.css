@@ -196,3 +196,6 @@ input[type='checkbox'] { accent-color: var(--brand-2); }
 @media (max-width: 640px) {
   .today { grid-template-columns: 1fr; }
 }
+.note { background: rgba(37, 99, 235, 0.08); color: var(--heading); padding: 8px 14px; border-radius: 14px; }
+details > summary.btn { display: inline-block; list-style: none; }
+details > summary.btn::-webkit-details-marker { display: none; }

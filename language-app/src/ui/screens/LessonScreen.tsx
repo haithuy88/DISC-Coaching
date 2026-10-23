@@ -24,12 +24,14 @@ interface Ctx {
   level: Level;
   code: string;
   showReading: boolean;
+  aiEnabled: boolean;
 }
 
 export function LessonScreen({
   language,
   level,
   code,
+  aiEnabled,
   lesson,
   profile,
   onOpen,
@@ -40,6 +42,7 @@ export function LessonScreen({
   language: LanguageInfo;
   level: Level;
   code: string;
+  aiEnabled: boolean;
   lesson: Lesson;
   profile: LearnerProfile;
   /** Gọi một lần khi mở bài (đưa từ vựng vào hộp ôn tập). */
@@ -51,12 +54,13 @@ export function LessonScreen({
   const steps: Step[] = [
     { key: 'intro', label: '📚 Từ vựng', type: 'intro' },
     ...lesson.activities.map((a): Step => ({ key: a.id, label: KIND_LABEL[a.kind], type: 'activity', activity: a })),
-    { key: 'roleplay', label: '💬 Thực chiến', type: 'roleplay' },
+    // Hội thoại thực chiến cần AI; khi AI tắt thì bỏ bước này.
+    ...(aiEnabled ? [{ key: 'roleplay', label: '💬 Thực chiến', type: 'roleplay' } as Step] : []),
   ];
   const [current, setCurrent] = useState(0);
   const [showReading, setShowReading] = useShowReading();
   const step = steps[current]!;
-  const ctx: Ctx = { language, level, code, showReading };
+  const ctx: Ctx = { language, level, code, showReading, aiEnabled };
 
   // Chỉ chạy khi mở bài mới.
   useEffect(() => onOpen(), [lesson.id]);
@@ -319,6 +323,7 @@ function ProductionTask({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [result, setResult] = useState<GradeResult>();
+  const [selfChecked, setSelfChecked] = useState(false);
   const byChar = Boolean(ctx.language.countsCharacters);
   const length = countLength(text, byChar);
   const isSpeaking = activity.kind === 'speaking';
@@ -350,6 +355,11 @@ function ProductionTask({
       <h3>{activity.titleVi}</h3>
       <p className="target-text">{activity.prompt}</p>
       <p className="muted small">{activity.hintVi}</p>
+      {!ctx.aiEnabled && (
+        <p className="note small">
+          Tự luyện: AI chấm bài đang tắt. Hãy làm bài rồi tự đối chiếu với các tiêu chí bên dưới. Bài này chưa tính điểm.
+        </p>
+      )}
       {isSpeaking && <MicButton locale={ctx.language.speechLocale} onTranscript={setText} />}
       <textarea
         rows={isSpeaking ? 4 : 8}
@@ -363,9 +373,22 @@ function ProductionTask({
         </p>
       )}
       {error && <p className="error">{error}</p>}
-      <button type="button" className="btn primary" disabled={busy || !text.trim() || tooShort} onClick={submit}>
-        {busy ? 'AI đang chấm (10–30 giây)…' : 'Nộp để AI chấm'}
-      </button>
+      {ctx.aiEnabled ? (
+        <button type="button" className="btn primary" disabled={busy || !text.trim() || tooShort} onClick={submit}>
+          {busy ? 'AI đang chấm (10–30 giây)…' : 'Nộp để AI chấm'}
+        </button>
+      ) : (
+        <details open={selfChecked}>
+          <summary className="btn ghost" onClick={() => setSelfChecked(true)}>
+            Tự kiểm tra
+          </summary>
+          <ul>
+            {activity.criteria.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+        </details>
+      )}
       {result && <GradeCard result={result} />}
     </div>
   );

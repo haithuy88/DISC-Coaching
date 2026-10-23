@@ -8,6 +8,8 @@ export interface Session {
   code: string;
   name: string;
   group: string;
+  /** AI (chấm Nói/Viết, hội thoại) có đang bật không — máy chủ báo khi đăng nhập. */
+  aiEnabled: boolean;
   activeLanguage?: string;
   profiles: Record<string, LearnerProfile>;
 }
@@ -75,8 +77,22 @@ export function useProgress() {
     const profiles = mergeProfiles(local, result.profiles);
     // Bản trên máy mới hơn thì đẩy lại lên Sheets.
     for (const [lang, p] of Object.entries(profiles)) if (p !== result.profiles[lang]) dirty.current.add(lang);
-    setSession({ code: code.toUpperCase(), name: result.name, group: result.group, activeLanguage: previous?.activeLanguage, profiles });
+    setSession({
+      code: code.toUpperCase(),
+      name: result.name,
+      group: result.group,
+      aiEnabled: result.aiEnabled,
+      activeLanguage: previous?.activeLanguage,
+      profiles,
+    });
   }, []);
+
+  // Mỗi lần mở app, hỏi lại máy chủ: cập nhật trạng thái AI (quản trị có thể vừa bật) và tiến độ từ máy khác.
+  // Mất mạng thì vẫn học tiếp bằng dữ liệu trên máy.
+  useEffect(() => {
+    const saved = loadSession();
+    if (saved) login(saved.code).catch(() => undefined);
+  }, [login]);
 
   const logout = useCallback(() => {
     setSession(undefined);

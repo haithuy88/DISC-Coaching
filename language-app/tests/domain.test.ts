@@ -7,6 +7,7 @@ import { SKILL_OF } from '../src/content/types.ts';
 import { scenariosFor, tracksForLevel, unitsFor } from '../src/domain/curriculum.ts';
 import { combinePlacement, scorePlacement } from '../src/domain/placement.ts';
 import {
+  AI_GRADED_KINDS,
   addLessonToReview,
   addXp,
   answerReview,
@@ -156,6 +157,14 @@ describe('progress', () => {
     expect(levelUpReady(p, en)).toBeUndefined();
     p = recordResult(p, activities[0]!.id, SKILL_OF[activities[0]!.kind], 80);
     expect(levelUpReady(p, en)).toBe('A2');
+  });
+
+  it('without AI, levels up on the self-graded activities only', () => {
+    let p = newProfile('en', 'A1');
+    const activities = en.units.filter((u) => u.level === 'A1').flatMap((u) => u.lessons.flatMap((l) => l.activities));
+    for (const a of activities.filter((a) => !AI_GRADED_KINDS.has(a.kind))) p = recordResult(p, a.id, SKILL_OF[a.kind], 80);
+    expect(levelUpReady(p, en)).toBeUndefined();
+    expect(levelUpReady(p, en, false)).toBe('A2');
   });
 
   it('runs vocabulary review on Leitner boxes', () => {

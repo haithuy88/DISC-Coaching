@@ -56,7 +56,7 @@ describe('setup & login', () => {
 
   it('logs in with a valid code, case-insensitively', () => {
     const res = gas.post({ action: 'login', code: code.toLowerCase() });
-    expect(res).toEqual({ ok: true, data: { name: 'Người dùng thử', group: 'Nhân viên', profiles: {} } });
+    expect(res).toEqual({ ok: true, data: { name: 'Người dùng thử', group: 'Nhân viên', aiEnabled: true, profiles: {} } });
   });
 
   it('rejects unknown and locked codes', () => {
@@ -129,10 +129,13 @@ describe('AI calls', () => {
     expect(gas.ss.tab('NHAT_KY_AI').rows[2]![10]).toMatch(/^lỗi/);
   });
 
-  it('explains a missing API key', () => {
+  it('reports AI as off without an API key, and refuses AI calls without using quota', () => {
     gas.props.delete('ANTHROPIC_API_KEY');
+    expect(gas.post({ action: 'login', code }).data.aiEnabled).toBe(false);
     const res = gas.post({ action: 'chat', code, payload: { language: 'en', level: 'A1', scenario, messages: [{ role: 'user', content: 'x' }] } });
-    expect(res.error).toMatch(/ANTHROPIC_API_KEY/);
+    expect(res.error).toBe('Tính năng AI đang tắt.');
+    expect(gas.fetchCalls).toHaveLength(0);
+    expect([...gas.props.keys()].some((k) => k.startsWith('usage:'))).toBe(false);
   });
 
   it('enforces the daily AI limit per user without calling Claude', () => {

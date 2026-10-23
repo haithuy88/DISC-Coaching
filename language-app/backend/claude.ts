@@ -30,6 +30,11 @@ function setting(key: string): string | null {
   return PropertiesService.getScriptProperties().getProperty(key);
 }
 
+/** AI chỉ bật khi quản trị đã cài ANTHROPIC_API_KEY; thêm/xoá key là bật/tắt, không cần triển khai lại. */
+export function aiEnabled(): boolean {
+  return Boolean(setting('ANTHROPIC_API_KEY'));
+}
+
 function callMessages(body: Record<string, unknown>): { text: string; usage: Usage } {
   const apiKey = setting('ANTHROPIC_API_KEY');
   if (!apiKey) throw new UserFacingError('Quản trị chưa cài ANTHROPIC_API_KEY trong Apps Script.');

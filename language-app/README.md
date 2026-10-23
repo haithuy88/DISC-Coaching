@@ -79,9 +79,7 @@ GitHub Pages: giao diện React (tĩnh, miễn phí)     Google Sheets  NGUOI_DU
 2. Menu **Tiện ích mở rộng → Apps Script**. Xoá hết code mẫu trong `Code.gs`.
 3. Mở file [`language-app/apps-script/Code.gs`](apps-script/Code.gs) trên GitHub → nút **Copy raw file** → dán vào Apps Script → **Lưu** (Ctrl+S).
 4. Ở thanh trên, chọn hàm **`setup`** → **Chạy** → cho phép các quyền Google hỏi. Sheet sẽ có 4 tab và một người dùng thử (có mã sẵn).
-5. **Cài đặt dự án** (biểu tượng bánh răng bên trái) → **Thuộc tính tập lệnh** → **Thêm thuộc tính**:
-   - `ANTHROPIC_API_KEY` = API key lấy ở [console.anthropic.com](https://console.anthropic.com) → API Keys (cần nạp credit vào tài khoản).
-   - Tuỳ chọn: `CLAUDE_MODEL` = `claude-haiku-5-5` nếu muốn tiết kiệm (xem phần Chi phí).
+5. **API key cho AI: bỏ qua ở giai đoạn thử nghiệm.** Không có key, app chạy ở **chế độ không AI** (xem mục dưới). Khi muốn bật AI, làm theo mục “Bật AI sau này”.
 6. **Triển khai → Tác vụ triển khai mới** → biểu tượng bánh răng → **Ứng dụng web**:
    - Thực thi với tư cách: **Tôi**
    - Người có quyền truy cập: **Bất kỳ ai**
@@ -106,6 +104,19 @@ GitHub Pages: giao diện React (tĩnh, miễn phí)     Google Sheets  NGUOI_DU
 2. Menu **Polyglot → Tạo mã truy cập**. Mỗi người nhận một mã dạng `LS-7KQ2MX` (đã bỏ các ký tự dễ nhầm như 0/O, 1/I).
 3. Gửi link app + mã cho từng người. Họ nhập mã một lần trên mỗi máy.
 4. Khoá ai đó: đổi **Trạng thái** thành `Khoá`. Giới hạn lượt AI/ngày: cột **Giới hạn AI/ngày** (để trống = 60).
+
+## Chế độ không AI và cách bật AI sau này
+
+Khi Apps Script **chưa có** thuộc tính `ANTHROPIC_API_KEY`, app tự chạy ở chế độ không AI, không tốn chi phí:
+
+| Vẫn dùng đầy đủ | Thay đổi |
+|---|---|
+| Test xếp lớp (phần trắc nghiệm), Từ vựng + ngữ pháp, Nghe, Đọc, Nói theo câu mẫu, Ôn tập, XP, chuỗi ngày, báo cáo trên Sheets | Bài Nói/Viết thành **tự luyện** (có tiêu chí tự kiểm tra, không tính điểm) · Ẩn bước Thực chiến và mục Hội thoại · Ngôn ngữ chưa có giáo trình (Nhật, Hàn, Pháp, Đức) hiện “Sắp ra mắt” · Lên level chỉ xét các bài tự chấm |
+
+**Bật AI sau này** (không cần sửa code hay triển khai lại):
+1. Lấy API key ở [console.anthropic.com](https://console.anthropic.com): nạp credit (Billing), đặt mức chi tối đa (Limits), tạo key (API Keys).
+2. Apps Script → **Cài đặt dự án** → **Thuộc tính tập lệnh** → thêm `ANTHROPIC_API_KEY` = key.
+3. Xong. Lần sau người học mở app, các phần AI tự hiện lại. Muốn tắt AI: xoá thuộc tính này.
 
 ## Chi phí AI (ước tính)
 

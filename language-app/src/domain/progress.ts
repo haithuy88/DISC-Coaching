@@ -1,7 +1,7 @@
 // Tiến độ người học: các hàm thuần, không đụng tới lưu trữ.
 import type { Level, Profile, Skill } from '../../shared/api';
 import { dayKey } from '../../shared/stats';
-import { SKILL_OF, type Course, type Lesson, type VocabItem } from '../content/types';
+import { SKILL_OF, type ActivityKind, type Course, type Lesson, type VocabItem } from '../content/types';
 import { nextLevel } from './levels';
 
 export type LearnerProfile = Profile;
@@ -38,13 +38,20 @@ export function recordConversation(profile: LearnerProfile, score: number, now =
   return addXp({ ...profile, conversations: profile.conversations + 1 }, 5 + Math.round(score / 20), now);
 }
 
-/** Đã đủ điều kiện lên level: làm hết bài ở level hiện tại, mỗi kỹ năng trung bình ≥ 70. */
-export function levelUpReady(profile: LearnerProfile, course: Course | undefined): Level | undefined {
+/** Hoạt động cần AI chấm; khi AI tắt, người học tự luyện và hoạt động này không tính điểm. */
+export const AI_GRADED_KINDS: ReadonlySet<ActivityKind> = new Set(['speaking', 'writing']);
+
+/**
+ * Đã đủ điều kiện lên level: làm hết bài ở level hiện tại, mỗi kỹ năng trung bình ≥ 70.
+ * Khi AI tắt, bỏ qua các hoạt động cần AI chấm.
+ */
+export function levelUpReady(profile: LearnerProfile, course: Course | undefined, aiEnabled = true): Level | undefined {
   const next = nextLevel(profile.level);
   if (!course || !next) return undefined;
   const activities = course.units
     .filter((u) => u.level === profile.level)
-    .flatMap((u) => u.lessons.flatMap((l) => l.activities));
+    .flatMap((u) => u.lessons.flatMap((l) => l.activities))
+    .filter((a) => aiEnabled || !AI_GRADED_KINDS.has(a.kind));
   if (activities.length === 0) return undefined;
   const bySkill = new Map<Skill, number[]>();
   for (const a of activities) {

@@ -56,6 +56,7 @@ export function App() {
       <PlacementScreen
         language={language}
         code={session.code}
+        aiEnabled={session.aiEnabled}
         onBack={profile ? () => setRoute({ name: 'dashboard' }) : goHome}
         onDone={(level, placement) => {
           startProfile(language.code, level, placement && { at: new Date().toISOString(), ...placement });
@@ -72,6 +73,7 @@ export function App() {
           language={language}
           level={unit.level}
           code={session.code}
+          aiEnabled={session.aiEnabled}
           lesson={lesson}
           profile={profile}
           onOpen={() => updateProfile((p) => addLessonToReview(p, lesson))}
@@ -105,13 +107,14 @@ export function App() {
       <DashboardScreen
         language={language}
         profile={profile}
+        aiEnabled={session.aiEnabled}
         onOpenLesson={(unitId, lessonId) => setRoute({ name: 'lesson', unitId, lessonId })}
         onChat={(scenario) => setRoute({ name: 'chat', scenario, back: { name: 'dashboard' } })}
         onReview={() => setRoute({ name: 'review' })}
         onRetest={() => setRoute({ name: 'placement' })}
         onLevelUp={() =>
           updateProfile((p) => {
-            const next = levelUpReady(p, getCourse(language.code));
+            const next = levelUpReady(p, getCourse(language.code), session.aiEnabled);
             return next ? { ...p, level: next } : p;
           })
         }
