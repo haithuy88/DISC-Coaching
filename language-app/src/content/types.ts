@@ -1,4 +1,4 @@
-import type { Level, Scenario } from '../../shared/api';
+import type { Level, Scenario, Skill } from '../../shared/api';
 
 export type TrackId =
   | 'general'
@@ -28,19 +28,55 @@ export interface Mcq {
   explanationVi?: string;
 }
 
+/** Một câu/cụm từ ở ngôn ngữ đích, kèm phiên âm (pinyin…) và nghĩa tiếng Việt. */
+export interface Phrase {
+  text: string;
+  /** Phiên âm: pinyin cho tiếng Hoa, romaji/hiragana cho tiếng Nhật… */
+  reading?: string;
+  meaningVi: string;
+}
+
 export interface VocabItem {
   term: string;
+  reading?: string;
   meaningVi: string;
   example?: string;
 }
 
+/** Mẹo ngữ pháp ngắn, học ngay trong ngữ cảnh bài. */
+export interface GrammarNote {
+  titleVi: string;
+  pointsVi: string[];
+  examples: Phrase[];
+}
+
 export type Activity =
-  | { id: string; kind: 'listening'; titleVi: string; script: string; questions: Mcq[] }
-  | { id: string; kind: 'reading'; titleVi: string; passage: string; questions: Mcq[] }
+  | {
+      id: string;
+      kind: 'listening';
+      titleVi: string;
+      script: string;
+      /** Phiên âm của lời thoại (hiện khi bật pinyin). */
+      reading?: string;
+      translationVi?: string;
+      questions: Mcq[];
+    }
+  | { id: string; kind: 'reading'; titleVi: string; passage: string; reading?: string; translationVi?: string; questions: Mcq[] }
+  /** Nghe câu mẫu rồi nói lại; app tự so khớp bản ghi, không tốn lượt AI. */
+  | { id: string; kind: 'shadowing'; titleVi: string; sentences: Phrase[] }
   | { id: string; kind: 'speaking'; titleVi: string; prompt: string; hintVi: string; criteria: string[] }
-  | { id: string; kind: 'writing'; titleVi: string; prompt: string; hintVi: string; minWords: number; criteria: string[] };
+  /** minLength tính theo từ, riêng tiếng Hoa/Nhật tính theo chữ. */
+  | { id: string; kind: 'writing'; titleVi: string; prompt: string; hintVi: string; minLength: number; criteria: string[] };
 
 export type ActivityKind = Activity['kind'];
+
+export const SKILL_OF: Record<ActivityKind, Skill> = {
+  listening: 'listening',
+  reading: 'reading',
+  shadowing: 'speaking',
+  speaking: 'speaking',
+  writing: 'writing',
+};
 
 export interface Lesson {
   id: string;
@@ -48,6 +84,7 @@ export interface Lesson {
   titleVi: string;
   objectivesVi: string[];
   vocabulary: VocabItem[];
+  grammar?: GrammarNote;
   activities: Activity[];
   /** Tình huống thực chiến cuối bài, sinh từ chủ đề bài học. */
   roleplay: Scenario;

@@ -1,0 +1,191 @@
+import type { Unit } from '../../types';
+
+export const ZH_A2: Unit[] = [
+  {
+    id: 'zh-a2-general-1',
+    level: 'A2',
+    track: 'general',
+    title: '我的一天',
+    titleVi: 'Một ngày của tôi',
+    lessons: [
+      {
+        id: 'zh-a2-general-1-l1',
+        title: '你几点上班？',
+        titleVi: 'Bạn đi làm lúc mấy giờ?',
+        objectivesVi: ['Nói giờ', 'Kể lịch sinh hoạt hằng ngày', 'Kể việc đã làm với 了'],
+        vocabulary: [
+          { term: '起床', reading: 'qǐchuáng', meaningVi: 'thức dậy' },
+          { term: '上班 / 下班', reading: 'shàngbān / xiàbān', meaningVi: 'đi làm / tan làm' },
+          { term: '…点半', reading: '…diǎn bàn', meaningVi: '… giờ rưỡi' },
+          { term: '然后', reading: 'ránhòu', meaningVi: 'sau đó' },
+          { term: '一般', reading: 'yìbān', meaningVi: 'thường thì' },
+          { term: '周末', reading: 'zhōumò', meaningVi: 'cuối tuần' },
+        ],
+        grammar: {
+          titleVi: 'Thời gian đứng TRƯỚC động từ',
+          pointsVi: [
+            'Khác tiếng Việt: “Tôi dậy lúc 7 giờ” → 我七点起床 (Tôi 7 giờ dậy).',
+            'Việc đã xảy ra: động từ + 了: 我昨天去了超市。',
+            'Phủ định quá khứ dùng 没: 我昨天没去。(không dùng 了)',
+          ],
+          examples: [
+            { text: '我七点起床。', reading: 'Wǒ qī diǎn qǐchuáng.', meaningVi: 'Tôi dậy lúc 7 giờ.' },
+            { text: '我昨天去了妈妈家。', reading: 'Wǒ zuótiān qùle māma jiā.', meaningVi: 'Hôm qua tôi về nhà mẹ.' },
+            { text: '我昨天没上班。', reading: 'Wǒ zuótiān méi shàngbān.', meaningVi: 'Hôm qua tôi không đi làm.' },
+          ],
+        },
+        activities: [
+          {
+            id: 'zh-a2-g1-l1-listen',
+            kind: 'listening',
+            titleVi: 'Nghe kể lịch một ngày',
+            script: '我一般六点半起床，七点半上班。中午十二点吃饭。下午五点下班，然后去健身房。',
+            reading: 'Wǒ yìbān liù diǎn bàn qǐchuáng, qī diǎn bàn shàngbān. Zhōngwǔ shí’èr diǎn chīfàn. Xiàwǔ wǔ diǎn xiàbān, ránhòu qù jiànshēnfáng.',
+            translationVi: 'Tôi thường dậy lúc 6 rưỡi, 7 rưỡi đi làm. 12 giờ trưa ăn cơm. 5 giờ chiều tan làm, sau đó đi phòng gym.',
+            questions: [
+              { id: 'q1', question: 'Người này đi làm lúc mấy giờ?', options: ['六点半', '七点半', '五点'], answer: 1 },
+              { id: 'q2', question: 'Tan làm xong đi đâu?', options: ['健身房', '超市', '饭馆'], answer: 0 },
+            ],
+          },
+          {
+            id: 'zh-a2-g1-l1-read',
+            kind: 'reading',
+            titleVi: 'Đọc nhật ký cuối tuần',
+            passage: '周末我常常睡懒觉，十点起床。下午我跟朋友去喝咖啡。昨天我去了妈妈家，吃了很多好吃的菜。',
+            reading: 'Zhōumò wǒ chángcháng shuì lǎnjiào, shí diǎn qǐchuáng. Xiàwǔ wǒ gēn péngyou qù hē kāfēi. Zuótiān wǒ qùle māma jiā, chīle hěn duō hǎochī de cài.',
+            translationVi: 'Cuối tuần tôi hay ngủ nướng, 10 giờ mới dậy. Buổi chiều tôi đi uống cà phê với bạn. Hôm qua tôi về nhà mẹ, ăn rất nhiều món ngon.',
+            questions: [
+              { id: 'q1', question: 'Cuối tuần người này dậy lúc mấy giờ?', options: ['七点', '十点', '十二点'], answer: 1 },
+              { id: 'q2', question: 'Hôm qua người này đi đâu?', options: ['朋友家', '妈妈家', '公司'], answer: 1 },
+            ],
+          },
+          {
+            id: 'zh-a2-g1-l1-shadow',
+            kind: 'shadowing',
+            titleVi: 'Nói theo câu mẫu',
+            sentences: [
+              { text: '我七点起床。', reading: 'Wǒ qī diǎn qǐchuáng.', meaningVi: 'Tôi dậy lúc 7 giờ.' },
+              { text: '我八点半上班。', reading: 'Wǒ bā diǎn bàn shàngbān.', meaningVi: 'Tôi đi làm lúc 8 rưỡi.' },
+              { text: '下班以后我去健身房。', reading: 'Xiàbān yǐhòu wǒ qù jiànshēnfáng.', meaningVi: 'Tan làm xong tôi đi phòng gym.' },
+            ],
+          },
+          {
+            id: 'zh-a2-g1-l1-speak',
+            kind: 'speaking',
+            titleVi: 'Nói: một ngày làm việc của bạn',
+            prompt: '说说你的一天：几点起床、几点上班、中午做什么、下班以后做什么。',
+            hintVi: 'Nhớ đặt giờ trước động từ. Dùng 然后 để nối câu.',
+            criteria: ['Time words placed before verbs', 'At least four activities in order'],
+          },
+          {
+            id: 'zh-a2-g1-l1-write',
+            kind: 'writing',
+            titleVi: 'Viết: cuối tuần vừa rồi',
+            prompt: '写写你上个周末做了什么（5–6句）。',
+            hintVi: 'Khoảng 40–70 chữ, dùng 了 cho việc đã làm.',
+            minLength: 40,
+            criteria: ['Uses 了 / 没 correctly for past events', 'Logical sequence with 然后'],
+          },
+        ],
+        roleplay: {
+          title: 'Trò chuyện với đồng nghiệp người Trung',
+          botRole: 'a Chinese colleague chatting at the coffee machine on Monday',
+          learnerRole: 'chính bạn',
+          goal: 'Kể về sinh hoạt hằng ngày và việc bạn làm cuối tuần',
+          targetPhrases: ['几点', '然后', '周末'],
+        },
+      },
+    ],
+  },
+  {
+    id: 'zh-a2-travel-1',
+    level: 'A2',
+    track: 'travel',
+    title: '在饭馆',
+    titleVi: 'Ở nhà hàng',
+    lessons: [
+      {
+        id: 'zh-a2-travel-1-l1',
+        title: '点菜',
+        titleVi: 'Gọi món',
+        objectivesVi: ['Gọi món, nói số người', 'Nêu yêu cầu: không cay, ít dầu', 'Thanh toán, xin hộp mang về'],
+        vocabulary: [
+          { term: '服务员', reading: 'fúwùyuán', meaningVi: 'nhân viên phục vụ' },
+          { term: '菜单', reading: 'càidān', meaningVi: 'thực đơn' },
+          { term: '几位？', reading: 'jǐ wèi?', meaningVi: 'mấy người ạ?' },
+          { term: '不要辣', reading: 'bú yào là', meaningVi: 'không cay' },
+          { term: '买单', reading: 'mǎidān', meaningVi: 'thanh toán' },
+          { term: '打包', reading: 'dǎbāo', meaningVi: 'gói mang về' },
+        ],
+        grammar: {
+          titleVi: 'Lời đề nghị lịch sự: 请… / 能…吗？',
+          pointsVi: ['请 + động từ = xin/mời làm gì: 请给我菜单。', '能 + động từ + 吗？= có thể … không?: 能少放点儿辣吗？', '要 = muốn/lấy (gọi món): 我们要一个…'],
+          examples: [
+            { text: '请给我菜单。', reading: 'Qǐng gěi wǒ càidān.', meaningVi: 'Cho tôi xem thực đơn.' },
+            { text: '能少放点儿辣吗？', reading: 'Néng shǎo fàng diǎnr là ma?', meaningVi: 'Cho ít cay được không?' },
+          ],
+        },
+        activities: [
+          {
+            id: 'zh-a2-t1-l1-listen',
+            kind: 'listening',
+            titleVi: 'Nghe khách gọi món',
+            script: '您好，几位？两位。这是菜单。我们要一个宫保鸡丁，一个西红柿炒鸡蛋，两碗米饭。不要太辣。',
+            reading: 'Nín hǎo, jǐ wèi? Liǎng wèi. Zhè shì càidān. Wǒmen yào yí gè gōngbǎo jīdīng, yí gè xīhóngshì chǎo jīdàn, liǎng wǎn mǐfàn. Bú yào tài là.',
+            translationVi: 'Chào anh chị, mấy người ạ? Hai người. Đây là thực đơn. Cho chúng tôi một gà xào Cung Bảo, một trứng xào cà chua, hai bát cơm. Đừng cay quá.',
+            questions: [
+              { id: 'q1', question: 'Có mấy khách?', options: ['一位', '两位', '三位'], answer: 1 },
+              { id: 'q2', question: 'Khách gọi mấy bát cơm?', options: ['一碗', '两碗', '三碗'], answer: 1 },
+            ],
+          },
+          {
+            id: 'zh-a2-t1-l1-read',
+            kind: 'reading',
+            titleVi: 'Đọc thực đơn',
+            passage: '宫保鸡丁 38元 · 麻婆豆腐 22元 · 西红柿炒鸡蛋 18元 · 米饭 2元/碗',
+            reading: 'gōngbǎo jīdīng 38 yuán · mápó dòufu 22 yuán · xīhóngshì chǎo jīdàn 18 yuán · mǐfàn 2 yuán/wǎn',
+            translationVi: 'Gà Cung Bảo 38 tệ · Đậu phụ Tứ Xuyên 22 tệ · Trứng xào cà chua 18 tệ · Cơm 2 tệ/bát',
+            questions: [
+              { id: 'q1', question: 'Một đậu phụ Tứ Xuyên và hai bát cơm hết bao nhiêu?', options: ['24元', '26元', '40元'], answer: 1 },
+              { id: 'q2', question: 'Món nào đắt nhất?', options: ['宫保鸡丁', '麻婆豆腐', '西红柿炒鸡蛋'], answer: 0 },
+            ],
+          },
+          {
+            id: 'zh-a2-t1-l1-shadow',
+            kind: 'shadowing',
+            titleVi: 'Nói theo câu mẫu',
+            sentences: [
+              { text: '服务员，请给我菜单。', reading: 'Fúwùyuán, qǐng gěi wǒ càidān.', meaningVi: 'Phục vụ ơi, cho tôi thực đơn.' },
+              { text: '不要太辣。', reading: 'Bú yào tài là.', meaningVi: 'Đừng cay quá.' },
+              { text: '买单！请帮我们打包。', reading: 'Mǎidān! Qǐng bāng wǒmen dǎbāo.', meaningVi: 'Tính tiền! Gói giúp chúng tôi mang về.' },
+            ],
+          },
+          {
+            id: 'zh-a2-t1-l1-speak',
+            kind: 'speaking',
+            titleVi: 'Nói: gọi món cho ba người',
+            prompt: '你和两个同事去饭馆。用上面的菜单点菜，告诉服务员一个同事不吃辣。',
+            hintVi: 'Nói số người → gọi 2–3 món + cơm → yêu cầu không cay.',
+            criteria: ['Orders with 要 and measure words', 'States a special request politely'],
+          },
+          {
+            id: 'zh-a2-t1-l1-write',
+            kind: 'writing',
+            titleVi: 'Viết: đánh giá nhà hàng',
+            prompt: '写一条简短的餐厅评价：吃了什么、味道怎么样、服务怎么样、多少钱。',
+            hintVi: 'Khoảng 40–70 chữ.',
+            minLength: 40,
+            criteria: ['Mentions dishes, taste, service and price', 'Uses 了 for what was eaten'],
+          },
+        ],
+        roleplay: {
+          title: 'Gọi món: món bạn muốn đã hết',
+          botRole: 'a busy waiter in a Chinese restaurant; one dish the customer wants is sold out',
+          learnerRole: 'khách đi cùng một đồng nghiệp không ăn được cay',
+          goal: 'Gọi đủ bữa cho hai người, xử lý món đã hết và xin thanh toán',
+          targetPhrases: ['菜单', '不要辣', '买单'],
+        },
+      },
+    ],
+  },
+];

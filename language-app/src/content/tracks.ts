@@ -25,35 +25,35 @@ export function findTrack(id: TrackId): Track {
  */
 export const SCENARIO_LIBRARY: Record<TrackId, Array<Scenario & { minLevel: Level }>> = {
   general: [
-    { minLevel: 'A1', title: 'Làm quen đồng nghiệp mới', botRole: 'a friendly new colleague on their first day', learnerRole: 'yourself', goal: 'Introduce yourself and ask 3 questions about the colleague', targetPhrases: [] },
-    { minLevel: 'A2', title: 'Hẹn cà phê cuối tuần', botRole: 'a friend who is busy this weekend', learnerRole: 'yourself', goal: 'Agree on a day, time and place to meet', targetPhrases: [] },
+    { minLevel: 'A1', title: 'Làm quen đồng nghiệp mới', botRole: 'a friendly new colleague on their first day', learnerRole: 'chính bạn', goal: 'Giới thiệu bản thân và hỏi đồng nghiệp 3 câu', targetPhrases: [] },
+    { minLevel: 'A2', title: 'Hẹn cà phê cuối tuần', botRole: 'a friend who is busy this weekend', learnerRole: 'chính bạn', goal: 'Thống nhất ngày, giờ và địa điểm gặp', targetPhrases: [] },
   ],
   travel: [
-    { minLevel: 'A2', title: 'Nhận phòng khách sạn', botRole: 'a hotel receptionist; the booked room type is not available', learnerRole: 'a guest with a reservation', goal: 'Check in and get a fair solution for the room problem', targetPhrases: [] },
-    { minLevel: 'B1', title: 'Chuyến bay bị huỷ', botRole: 'an airline ground staff member', learnerRole: 'a passenger whose flight was cancelled', goal: 'Get rebooked on the next flight and ask about compensation', targetPhrases: [] },
+    { minLevel: 'A2', title: 'Nhận phòng khách sạn', botRole: 'a hotel receptionist; the booked room type is not available', learnerRole: 'khách đã đặt phòng', goal: 'Nhận phòng và có được giải pháp hợp lý cho sự cố phòng', targetPhrases: [] },
+    { minLevel: 'B1', title: 'Chuyến bay bị huỷ', botRole: 'an airline ground staff member', learnerRole: 'hành khách bị huỷ chuyến bay', goal: 'Được đổi sang chuyến bay tiếp theo và hỏi về bồi thường', targetPhrases: [] },
   ],
   sales: [
-    { minLevel: 'A2', title: 'Khách hỏi sản phẩm', botRole: 'a customer comparing two products', learnerRole: 'a sales assistant', goal: 'Find out the customer\'s needs and recommend one product', targetPhrases: [] },
-    { minLevel: 'B1', title: 'Khách phàn nàn giao hàng trễ', botRole: 'an annoyed customer whose order is 5 days late', learnerRole: 'a customer service agent', goal: 'Calm the customer, explain, and offer a solution', targetPhrases: [] },
+    { minLevel: 'A2', title: 'Khách hỏi sản phẩm', botRole: 'a customer comparing two products', learnerRole: 'nhân viên bán hàng', goal: 'Find out the customer\'s needs and recommend one product', targetPhrases: [] },
+    { minLevel: 'B1', title: 'Khách phàn nàn giao hàng trễ', botRole: 'an annoyed customer whose order is 5 days late', learnerRole: 'nhân viên chăm sóc khách hàng', goal: 'Làm khách dịu lại, giải thích và đưa ra giải pháp', targetPhrases: [] },
   ],
   hospitality: [
-    { minLevel: 'A2', title: 'Nhận đặt bàn qua điện thoại', botRole: 'a customer calling to book a table for a group', learnerRole: 'restaurant staff', goal: 'Take the booking with date, time, number of people and special requests', targetPhrases: [] },
+    { minLevel: 'A2', title: 'Nhận đặt bàn qua điện thoại', botRole: 'a customer calling to book a table for a group', learnerRole: 'nhân viên nhà hàng', goal: 'Nhận đặt bàn: ngày, giờ, số người và yêu cầu đặc biệt', targetPhrases: [] },
   ],
   business: [
-    { minLevel: 'B1', title: 'Cập nhật tiến độ trong họp', botRole: 'your manager running a weekly meeting', learnerRole: 'a team member', goal: 'Report progress, one delay, and what help you need', targetPhrases: [] },
-    { minLevel: 'B2', title: 'Đàm phán điều khoản hợp đồng', botRole: 'a partner who wants a longer payment term', learnerRole: 'the account manager', goal: 'Reach a compromise on payment terms without losing margin', targetPhrases: [] },
+    { minLevel: 'B1', title: 'Cập nhật tiến độ trong họp', botRole: 'your manager running a weekly meeting', learnerRole: 'thành viên trong nhóm', goal: 'Báo cáo tiến độ, một việc bị chậm và hỗ trợ bạn cần', targetPhrases: [] },
+    { minLevel: 'B2', title: 'Đàm phán điều khoản hợp đồng', botRole: 'a partner who wants a longer payment term', learnerRole: 'người phụ trách khách hàng', goal: 'Thoả hiệp về điều khoản thanh toán mà không mất lợi nhuận', targetPhrases: [] },
   ],
   purchasing: [
-    { minLevel: 'B1', title: 'Xin báo giá nhà cung cấp', botRole: 'a sales rep at a packaging supplier', learnerRole: 'a purchasing officer', goal: 'Get price, MOQ, lead time and payment terms for 10,000 cartons', targetPhrases: ['request for quotation', 'lead time', 'MOQ'] },
-    { minLevel: 'B2', title: 'Đàm phán giảm giá', botRole: 'a supplier who has just raised prices by 8%', learnerRole: 'a purchasing manager', goal: 'Negotiate the increase down to 3% or less', targetPhrases: [] },
+    { minLevel: 'B1', title: 'Xin báo giá nhà cung cấp', botRole: 'a sales rep at a packaging supplier', learnerRole: 'nhân viên thu mua', goal: 'Hỏi được giá, MOQ, thời gian giao và điều khoản thanh toán cho 10.000 thùng carton', targetPhrases: ['request for quotation', 'lead time', 'MOQ'] },
+    { minLevel: 'B2', title: 'Đàm phán giảm giá', botRole: 'a supplier who has just raised prices by 8%', learnerRole: 'trưởng phòng thu mua', goal: 'Đàm phán mức tăng giá xuống 3% hoặc thấp hơn', targetPhrases: [] },
   ],
   accounting: [
-    { minLevel: 'B1', title: 'Đối chiếu công nợ', botRole: 'an accountant at a customer company whose figures differ from yours', learnerRole: 'an accounts receivable officer', goal: 'Find the reason for the difference and agree next steps', targetPhrases: ['reconcile', 'outstanding balance', 'invoice'] },
+    { minLevel: 'B1', title: 'Đối chiếu công nợ', botRole: 'an accountant at a customer company whose figures differ from yours', learnerRole: 'kế toán công nợ phải thu', goal: 'Tìm ra nguyên nhân chênh lệch và thống nhất bước tiếp theo', targetPhrases: ['reconcile', 'outstanding balance', 'invoice'] },
   ],
   hr: [
-    { minLevel: 'B1', title: 'Phỏng vấn ứng viên', botRole: 'a job candidate for a sales position', learnerRole: 'the HR interviewer', goal: 'Ask about experience, strengths and salary expectations', targetPhrases: [] },
+    { minLevel: 'B1', title: 'Phỏng vấn ứng viên', botRole: 'a job candidate for a sales position', learnerRole: 'người phỏng vấn của phòng Nhân sự', goal: 'Hỏi về kinh nghiệm, điểm mạnh và mức lương mong muốn', targetPhrases: [] },
   ],
   tech: [
-    { minLevel: 'B1', title: 'Báo lỗi hệ thống', botRole: 'an IT support engineer', learnerRole: 'a user whose system is not working', goal: 'Describe the problem clearly and agree on a fix time', targetPhrases: [] },
+    { minLevel: 'B1', title: 'Báo lỗi hệ thống', botRole: 'an IT support engineer', learnerRole: 'người dùng có hệ thống đang bị lỗi', goal: 'Mô tả rõ sự cố và chốt thời gian khắc phục', targetPhrases: [] },
   ],
 };

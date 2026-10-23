@@ -17,5 +17,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["server", "shared", "vite.config.ts"]
+  "include": ["backend", "shared", "tools", "tests/backend.test.ts", "vite.config.ts"]
 }

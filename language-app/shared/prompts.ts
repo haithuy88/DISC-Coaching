@@ -1,9 +1,9 @@
 // Prompt hệ thống cho bot hội thoại và bộ chấm. Phản hồi cho người học viết bằng tiếng Việt;
 // nội dung luyện tập dùng ngôn ngữ đích.
-import type { ChatRequest, GradeRequest } from '../shared/api.ts';
-import { findLanguage } from '../shared/languages.ts';
+import type { ChatRequest, GradeRequest, Level } from './api.ts';
+import { findLanguage } from './languages.ts';
 
-const LEVEL_GUIDE: Record<string, string> = {
+const LEVEL_GUIDE: Record<Level, string> = {
   A1: 'very short sentences, the 500 most common words, present tense, speak slowly and simply',
   A2: 'short sentences, everyday vocabulary, simple past and future, avoid idioms',
   B1: 'connected sentences, common work and daily-life vocabulary, some idioms explained by context',
@@ -14,6 +14,18 @@ const LEVEL_GUIDE: Record<string, string> = {
 
 function languageName(code: string): string {
   return findLanguage(code)?.nameEn ?? code;
+}
+
+/** Hỗ trợ riêng theo ngôn ngữ, ví dụ pinyin cho người mới học tiếng Hoa. */
+function readingSupport(language: string, level: Level): string {
+  const beginner = level === 'A1' || level === 'A2';
+  if (language === 'zh') {
+    return beginner
+      ? 'Write in simplified characters, then put the full pinyin with tone marks on the next line.'
+      : 'Write in simplified characters only.';
+  }
+  if (language === 'ja' && beginner) return 'Write in simple Japanese and add the reading in hiragana in brackets after each kanji word.';
+  return '';
 }
 
 export function chatSystemPrompt(req: ChatRequest): string {
@@ -29,6 +41,7 @@ export function chatSystemPrompt(req: ChatRequest): string {
     s.targetPhrases.length ? `Phrases the learner is practising: ${s.targetPhrases.join('; ')}` : '',
     '',
     `The learner is at CEFR level ${req.level}. Use ${LEVEL_GUIDE[req.level]}.`,
+    readingSupport(req.language, req.level),
     '',
     'How to behave:',
     `- Stay in character and reply only in ${lang}. Keep each reply to 1–3 sentences so the learner talks more than you.`,
@@ -48,14 +61,17 @@ export function gradeSystemPrompt(req: GradeRequest): string {
     writing: 'a piece of writing',
     speaking:
       'a spoken answer, given as an automatic speech-to-text transcript. Transcription errors and missing punctuation are not the learner\'s fault; judge vocabulary, grammar, fluency and task completion, and mention pronunciation only when a word was clearly transcribed as a different word',
-    conversation: 'a whole role-play conversation; judge only the learner\'s ("user") turns',
+    conversation: 'a whole role-play conversation; judge only the learner\'s turns',
   }[req.skill];
   return [
     `You are an experienced ${lang} teacher grading ${what} from a Vietnamese learner.`,
     `The learner studies at CEFR level ${req.level}. Score 0–100 against what is expected at that level (70 = solid for the level), and estimate the CEFR level the answer actually shows.`,
     'Write summary, strengths, explanations and nextStep in Vietnamese, warm and specific. Keep original, corrected and improvedVersion in the target language.',
+    req.language === 'zh' ? 'For Chinese, add pinyin with tone marks in brackets after each corrected phrase and in improvedVersion.' : '',
     'List at most the 6 most useful corrections, most important first. improvedVersion keeps the learner\'s ideas but shows how a strong learner at the next level would say it.',
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 export function gradeUserPrompt(req: GradeRequest): string {

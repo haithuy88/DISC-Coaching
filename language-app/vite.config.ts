@@ -3,6 +3,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // Đường dẫn tương đối để chạy được trên GitHub Pages (thư mục con) hay bất kỳ hosting tĩnh nào.
+  base: './',
   plugins: [react()],
   server: {
     host: '127.0.0.1',

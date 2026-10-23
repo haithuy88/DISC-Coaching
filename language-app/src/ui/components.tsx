@@ -41,6 +41,67 @@ export function SkillBars({ averages }: { averages: Record<Skill, number | null>
   );
 }
 
+/** Vòng tròn XP hôm nay so với mục tiêu ngày. */
+export function DailyGoal({ xp, goal, streak }: { xp: number; goal: number; streak: number }) {
+  const pct = Math.min(100, Math.round((xp / goal) * 100));
+  return (
+    <div className="daily">
+      <div className="ring" style={{ background: `conic-gradient(var(--success) ${pct}%, var(--line) 0)` }}>
+        <span>
+          {xp}/{goal}
+        </span>
+      </div>
+      <div>
+        <strong>{pct >= 100 ? 'Đạt mục tiêu hôm nay 🎉' : 'Mục tiêu hôm nay'}</strong>
+        <div className="muted small">🔥 {streak} ngày liên tiếp</div>
+      </div>
+    </div>
+  );
+}
+
+const READING_KEY = 'polyglot-show-reading';
+
+/** Bật/tắt phiên âm (pinyin…), nhớ lựa chọn trên máy. */
+export function useShowReading(): [boolean, (v: boolean) => void] {
+  const [show, setShow] = useState(() => {
+    try {
+      return localStorage.getItem(READING_KEY) !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  return [
+    show,
+    (v) => {
+      setShow(v);
+      try {
+        localStorage.setItem(READING_KEY, v ? 'on' : 'off');
+      } catch {
+        // bỏ qua
+      }
+    },
+  ];
+}
+
+export function ReadingToggle({ name, show, onChange }: { name: string; show: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="small muted toggle">
+      <input type="checkbox" checked={show} onChange={(e) => onChange(e.target.checked)} /> Hiện {name}
+    </label>
+  );
+}
+
+/** Văn bản ngôn ngữ đích, kèm phiên âm và nghĩa nếu có. */
+export function TargetText({ text, reading, meaningVi, showReading }: { text: string; reading?: string; meaningVi?: string; showReading: boolean }) {
+  return (
+    <span className="target">
+      <span className="target-text">{text}</span>
+      {showReading && reading && <span className="reading">{reading}</span>}
+      {meaningVi && <span className="muted small">{meaningVi}</span>}
+    </span>
+  );
+}
+
 export function ListenButton({ text, locale, label = 'Nghe' }: { text: string; locale: string; label?: string }) {
   return (
     <button type="button" className="btn ghost" onClick={() => speak(text, locale)}>
@@ -50,7 +111,7 @@ export function ListenButton({ text, locale, label = 'Nghe' }: { text: string; l
 }
 
 /** Nút ghi âm: bấm để nói, bấm lần nữa để dừng. Bản ghi đẩy ra qua onTranscript. */
-export function MicButton({ locale, onTranscript }: { locale: string; onTranscript: (text: string) => void }) {
+export function MicButton({ locale, onTranscript, label = 'Nói' }: { locale: string; onTranscript: (text: string) => void; label?: string }) {
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string>();
   const listener = useRef<Listener>(undefined);
@@ -75,7 +136,7 @@ export function MicButton({ locale, onTranscript }: { locale: string; onTranscri
   return (
     <span className="mic">
       <button type="button" className={`btn ${recording ? 'danger' : 'primary'}`} onClick={toggle}>
-        {recording ? '⏹ Dừng' : '🎙️ Nói'}
+        {recording ? '⏹ Dừng' : `🎙️ ${label}`}
       </button>
       {error && <span className="error small">{error}</span>}
     </span>

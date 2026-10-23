@@ -4,6 +4,7 @@ import { LEVEL_LABELS_VI, type LanguageInfo } from '../../../shared/languages';
 import { getPlacementTest } from '../../content';
 import { combinePlacement, scorePlacement, type PlacementScore } from '../../domain/placement';
 import { gradeResponse } from '../../lib/api';
+import { shuffledOrder } from '../../lib/shuffle';
 import { GradeCard, LevelBadge, ListenButton } from '../components';
 
 type Stage = 'intro' | 'questions' | 'writing' | 'result';
@@ -13,10 +14,12 @@ const GENERIC_WRITING_TASK = 'Write as much as you can (3–8 sentences) about y
 
 export function PlacementScreen({
   language,
+  code,
   onDone,
   onBack,
 }: {
   language: LanguageInfo;
+  code: string;
   onDone: (level: Level, placement?: { objectiveLevel?: Level; writingLevel?: Level }) => void;
   onBack: () => void;
 }) {
@@ -36,7 +39,7 @@ export function PlacementScreen({
     setGrading(true);
     setError(undefined);
     try {
-      const result = await gradeResponse({
+      const result = await gradeResponse(code, {
         language: language.code,
         // Chấm so với B1 để thang điểm ở giữa; level thật lấy từ estimatedLevel.
         level: objective?.level ?? 'B1',
@@ -104,14 +107,14 @@ export function PlacementScreen({
           {q.audio && <ListenButton text={q.audio} locale={language.speechLocale} label="Nghe đoạn âm thanh" />}
           <h3>{q.question}</h3>
           <div className="options">
-            {q.options.map((opt, i) => (
+            {shuffledOrder(q.id + q.question, q.options.length).map((i) => (
               <button
-                key={opt}
+                key={i}
                 type="button"
                 className={`option ${chosen === i ? 'selected' : ''}`}
                 onClick={() => setAnswers({ ...answers, [q.id]: i })}
               >
-                {opt}
+                {q.options[i]}
               </button>
             ))}
             <button type="button" className={`option muted ${chosen === -1 ? 'selected' : ''}`} onClick={() => setAnswers({ ...answers, [q.id]: -1 })}>

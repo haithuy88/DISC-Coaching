@@ -1,17 +1,16 @@
 import { LANGUAGES } from '../../../shared/languages';
-import type { ProgressState } from '../../domain/progress';
+import type { Session } from '../useProgress';
 
-export function HomeScreen({ state, onPick }: { state: ProgressState; onPick: (code: string) => void }) {
+export function HomeScreen({ session, onPick, onLogout }: { session: Session; onPick: (code: string) => void; onLogout: () => void }) {
   return (
     <section>
       <header className="hero">
-        <h1>Học ngoại ngữ thực chiến</h1>
-        <p>Học theo level và chuyên ngành, luyện đủ Nghe – Nói – Đọc – Viết, rồi hội thoại với AI trong tình huống thật.</p>
+        <h1>Chào {session.name} 👋</h1>
+        <p>Chọn ngôn ngữ để học tiếp hoặc bắt đầu ngôn ngữ mới.</p>
       </header>
-      <h2>Chọn ngôn ngữ</h2>
       <div className="grid">
         {LANGUAGES.map((lang) => {
-          const profile = state.profiles[lang.code];
+          const profile = session.profiles[lang.code];
           return (
             <button key={lang.code} type="button" className="card tile" onClick={() => onPick(lang.code)}>
               <span className="flag">{lang.flag}</span>
@@ -23,6 +22,12 @@ export function HomeScreen({ state, onPick }: { state: ProgressState; onPick: (c
           );
         })}
       </div>
+      <p className="muted small">
+        Mã truy cập: {session.code} ·{' '}
+        <button type="button" className="link" onClick={onLogout}>
+          Đăng xuất
+        </button>
+      </p>
     </section>
   );
 }

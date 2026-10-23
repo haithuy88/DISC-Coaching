@@ -4,14 +4,16 @@ import type { LanguageInfo } from '../../../shared/languages';
 import { getCourse } from '../../content';
 import type { TrackId } from '../../content/types';
 import { scenariosFor, tracksForLevel, unitsFor } from '../../domain/curriculum';
-import { levelUpReady, skillAverages, type LearnerProfile } from '../../domain/progress';
-import { LevelBadge, SkillBars } from '../components';
+import { dueReviewKeys, levelUpReady, todayXp, type LearnerProfile } from '../../domain/progress';
+import { currentStreak, skillAverages } from '../../../shared/stats';
+import { DailyGoal, LevelBadge, SkillBars } from '../components';
 
 export function DashboardScreen({
   language,
   profile,
   onOpenLesson,
   onChat,
+  onReview,
   onRetest,
   onLevelUp,
   onBack,
@@ -20,6 +22,7 @@ export function DashboardScreen({
   profile: LearnerProfile;
   onOpenLesson: (unitId: string, lessonId: string) => void;
   onChat: (scenario: Scenario) => void;
+  onReview: () => void;
   onRetest: () => void;
   onLevelUp: () => void;
   onBack: () => void;
@@ -30,6 +33,7 @@ export function DashboardScreen({
   const units = course ? unitsFor(course, profile.level, trackId) : [];
   const scenarios = scenariosFor(profile.level, trackId);
   const readyFor = levelUpReady(profile, course);
+  const dueCards = dueReviewKeys(profile).length;
 
   return (
     <section>
@@ -50,6 +54,18 @@ export function DashboardScreen({
           </p>
         </div>
         <SkillBars averages={skillAverages(profile)} />
+      </div>
+
+      <div className="today">
+        <div className="card">
+          <DailyGoal xp={todayXp(profile)} goal={profile.dailyGoal} streak={currentStreak(profile.daily)} />
+        </div>
+        <button type="button" className="card review-btn" onClick={onReview} disabled={Object.keys(profile.review).length === 0}>
+          <strong>🃏 Ôn tập từ vựng</strong>
+          <span className="muted small">
+            {Object.keys(profile.review).length === 0 ? 'Học một bài để có thẻ ôn' : dueCards ? `${dueCards} thẻ cần ôn hôm nay` : 'Hôm nay đã ôn xong'}
+          </span>
+        </button>
       </div>
 
       {readyFor && (

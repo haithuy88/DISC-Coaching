@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChatTurn, GradeResult, Level, Scenario } from '../../../shared/api';
 import type { LanguageInfo } from '../../../shared/languages';
-import { gradeResponse, streamChat } from '../../lib/api';
+import { chat, gradeResponse } from '../../lib/api';
 import { speak, stopSpeaking } from '../../lib/speech';
 import { GradeCard, MicButton } from '../components';
 
@@ -12,18 +12,19 @@ const MAX_TURNS = 40;
 export function ChatScreen({
   language,
   level,
+  code,
   scenario,
   onFinished,
   onBack,
 }: {
   language: LanguageInfo;
   level: Level;
+  code: string;
   scenario: Scenario;
   onFinished: (score: number) => void;
   onBack: () => void;
 }) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
-  const [pending, setPending] = useState('');
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -37,13 +38,12 @@ export function ChatScreen({
     setBusy(true);
     setError(undefined);
     try {
-      const reply = await streamChat({ language: language.code, level, scenario, messages: [START, ...history] }, setPending);
+      const reply = await chat(code, { language: language.code, level, scenario, messages: [START, ...history] });
       setTurns([...history, { role: 'assistant', content: reply }]);
       if (autoSpeak) speak(reply, language.speechLocale);
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setPending('');
       setBusy(false);
     }
   }
@@ -56,7 +56,7 @@ export function ChatScreen({
     return stopSpeaking;
   }, []);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth' }), [turns, pending]);
+  useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth' }), [turns, busy]);
 
   function submit() {
     const text = input.trim();
@@ -72,7 +72,7 @@ export function ChatScreen({
     setError(undefined);
     try {
       const transcript = turns.map((t) => `${t.role === 'user' ? 'Learner' : 'Partner'}: ${t.content}`).join('\n');
-      const result = await gradeResponse({
+      const result = await gradeResponse(code, {
         language: language.code,
         level,
         skill: 'conversation',
@@ -117,8 +117,7 @@ export function ChatScreen({
             )}
           </div>
         ))}
-        {pending && <div className="bubble assistant">{pending}</div>}
-        {busy && !pending && <div className="bubble assistant muted">…</div>}
+        {busy && <div className="bubble assistant muted typing">Đang trả lời…</div>}
         <div ref={bottom} />
       </div>
 

@@ -1,43 +1,65 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { GradeResult, Level, Scenario, Skill } from '../../../shared/api';
 import type { LanguageInfo } from '../../../shared/languages';
-import type { Activity, Lesson, Mcq } from '../../content/types';
+import { SKILL_OF, type Activity, type Lesson, type Mcq, type Phrase } from '../../content/types';
 import type { LearnerProfile } from '../../domain/progress';
+import { countLength, shadowingScore } from '../../domain/shadowing';
 import { gradeResponse } from '../../lib/api';
+import { shuffledOrder } from '../../lib/shuffle';
 import { speak } from '../../lib/speech';
-import { GradeCard, ListenButton, MicButton, SKILL_LABELS } from '../components';
+import { GradeCard, ListenButton, MicButton, ReadingToggle, SKILL_LABELS, TargetText, useShowReading } from '../components';
 
-type Step = { key: string; label: string } & ({ type: 'vocab' } | { type: 'activity'; activity: Activity } | { type: 'roleplay' });
+type Step = { key: string; label: string } & ({ type: 'intro' } | { type: 'activity'; activity: Activity } | { type: 'roleplay' });
+
+const KIND_LABEL: Record<Activity['kind'], string> = {
+  listening: `${SKILL_LABELS.listening.icon} Nghe`,
+  reading: `${SKILL_LABELS.reading.icon} Đọc`,
+  shadowing: '🔁 Nói theo',
+  speaking: `${SKILL_LABELS.speaking.icon} Nói`,
+  writing: `${SKILL_LABELS.writing.icon} Viết`,
+};
+
+interface Ctx {
+  language: LanguageInfo;
+  level: Level;
+  code: string;
+  showReading: boolean;
+}
 
 export function LessonScreen({
   language,
   level,
+  code,
   lesson,
   profile,
+  onOpen,
   onResult,
   onRoleplay,
   onBack,
 }: {
   language: LanguageInfo;
   level: Level;
+  code: string;
   lesson: Lesson;
   profile: LearnerProfile;
+  /** Gọi một lần khi mở bài (đưa từ vựng vào hộp ôn tập). */
+  onOpen: () => void;
   onResult: (activityId: string, skill: Skill, score: number) => void;
   onRoleplay: (scenario: Scenario) => void;
   onBack: () => void;
 }) {
   const steps: Step[] = [
-    { key: 'vocab', label: '📚 Từ vựng', type: 'vocab' },
-    ...lesson.activities.map((a): Step => ({
-      key: a.id,
-      label: `${SKILL_LABELS[a.kind].icon} ${SKILL_LABELS[a.kind].vi}`,
-      type: 'activity',
-      activity: a,
-    })),
+    { key: 'intro', label: '📚 Từ vựng', type: 'intro' },
+    ...lesson.activities.map((a): Step => ({ key: a.id, label: KIND_LABEL[a.kind], type: 'activity', activity: a })),
     { key: 'roleplay', label: '💬 Thực chiến', type: 'roleplay' },
   ];
   const [current, setCurrent] = useState(0);
+  const [showReading, setShowReading] = useShowReading();
   const step = steps[current]!;
+  const ctx: Ctx = { language, level, code, showReading };
+
+  // Chỉ chạy khi mở bài mới.
+  useEffect(() => onOpen(), [lesson.id]);
 
   return (
     <section className="narrow">
@@ -45,7 +67,10 @@ export function LessonScreen({
         ← Tổng quan
       </button>
       <h1>{lesson.titleVi}</h1>
-      <p className="muted">{lesson.title}</p>
+      <div className="row left">
+        <span className="muted">{lesson.title}</span>
+        {language.readingName && <ReadingToggle name={language.readingName} show={showReading} onChange={setShowReading} />}
+      </div>
       <nav className="stepper">
         {steps.map((s, i) => {
           const done = s.type === 'activity' && profile.results[s.activity.id];
@@ -58,37 +83,10 @@ export function LessonScreen({
         })}
       </nav>
 
-      {step.type === 'vocab' && (
-        <div className="card">
-          <h3>Mục tiêu bài học</h3>
-          <ul>
-            {lesson.objectivesVi.map((o) => (
-              <li key={o}>{o}</li>
-            ))}
-          </ul>
-          <h3>Từ vựng</h3>
-          <ul className="vocab">
-            {lesson.vocabulary.map((v) => (
-              <li key={v.term}>
-                <button type="button" className="icon-btn" onClick={() => speak(v.example ?? v.term, language.speechLocale)}>
-                  🔊
-                </button>
-                <strong>{v.term}</strong> — {v.meaningVi}
-                {v.example && <div className="muted small">{v.example}</div>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {step.type === 'intro' && <IntroView lesson={lesson} ctx={ctx} />}
 
       {step.type === 'activity' && (
-        <ActivityView
-          key={step.activity.id}
-          activity={step.activity}
-          language={language}
-          level={level}
-          onScore={(score) => onResult(step.activity.id, step.activity.kind, score)}
-        />
+        <ActivityView key={step.activity.id} activity={step.activity} ctx={ctx} onScore={(score) => onResult(step.activity.id, SKILL_OF[step.activity.kind], score)} />
       )}
 
       {step.type === 'roleplay' && (
@@ -119,46 +117,92 @@ export function LessonScreen({
   );
 }
 
-function ActivityView({
-  activity,
-  language,
-  level,
-  onScore,
-}: {
-  activity: Activity;
-  language: LanguageInfo;
-  level: Level;
-  onScore: (score: number) => void;
-}) {
+function IntroView({ lesson, ctx }: { lesson: Lesson; ctx: Ctx }) {
+  const locale = ctx.language.speechLocale;
+  return (
+    <div className="card">
+      <h3>Mục tiêu bài học</h3>
+      <ul>
+        {lesson.objectivesVi.map((o) => (
+          <li key={o}>{o}</li>
+        ))}
+      </ul>
+      <h3>Từ vựng</h3>
+      <ul className="vocab">
+        {lesson.vocabulary.map((v) => (
+          <li key={v.term}>
+            <button type="button" className="icon-btn" onClick={() => speak(v.example ?? v.term, locale)} aria-label={`Nghe ${v.term}`}>
+              🔊
+            </button>
+            <TargetText text={v.term} reading={v.reading} meaningVi={v.meaningVi} showReading={ctx.showReading} />
+            {v.example && <div className="muted small">{v.example}</div>}
+          </li>
+        ))}
+      </ul>
+      {lesson.grammar && (
+        <>
+          <h3>💡 {lesson.grammar.titleVi}</h3>
+          <ul>
+            {lesson.grammar.pointsVi.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+          <ul className="vocab">
+            {lesson.grammar.examples.map((ex) => (
+              <li key={ex.text}>
+                <button type="button" className="icon-btn" onClick={() => speak(ex.text, locale)} aria-label={`Nghe ${ex.text}`}>
+                  🔊
+                </button>
+                <TargetText {...ex} showReading={ctx.showReading} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p className="muted small">Từ vựng của bài đã được thêm vào mục Ôn tập.</p>
+    </div>
+  );
+}
+
+function ActivityView({ activity, ctx, onScore }: { activity: Activity; ctx: Ctx; onScore: (score: number) => void }) {
+  const locale = ctx.language.speechLocale;
   switch (activity.kind) {
     case 'listening':
       return (
         <div className="card">
           <h3>{activity.titleVi}</h3>
           <div className="row left">
-            <ListenButton text={activity.script} locale={language.speechLocale} />
-            <button type="button" className="btn ghost" onClick={() => speak(activity.script, language.speechLocale, 0.7)}>
+            <ListenButton text={activity.script} locale={locale} />
+            <button type="button" className="btn ghost" onClick={() => speak(activity.script, locale, 0.65)}>
               🐢 Nghe chậm
             </button>
           </div>
-          <Quiz questions={activity.questions} onScore={onScore} reveal={activity.script} />
+          <Quiz
+            questions={activity.questions}
+            onScore={onScore}
+            reveal={<TargetText text={activity.script} reading={activity.reading} meaningVi={activity.translationVi} showReading={ctx.showReading} />}
+          />
         </div>
       );
     case 'reading':
       return (
         <div className="card">
           <h3>{activity.titleVi}</h3>
-          <blockquote>{activity.passage}</blockquote>
-          <Quiz questions={activity.questions} onScore={onScore} />
+          <blockquote>
+            <TargetText text={activity.passage} reading={activity.reading} showReading={ctx.showReading} />
+          </blockquote>
+          <Quiz questions={activity.questions} onScore={onScore} reveal={activity.translationVi && <p>{activity.translationVi}</p>} />
         </div>
       );
+    case 'shadowing':
+      return <Shadowing activity={activity} ctx={ctx} onScore={onScore} />;
     case 'speaking':
     case 'writing':
-      return <ProductionTask activity={activity} language={language} level={level} onScore={onScore} />;
+      return <ProductionTask activity={activity} ctx={ctx} onScore={onScore} />;
   }
 }
 
-function Quiz({ questions, onScore, reveal }: { questions: Mcq[]; onScore: (score: number) => void; reveal?: string }) {
+function Quiz({ questions, onScore, reveal }: { questions: Mcq[]; onScore: (score: number) => void; reveal?: React.ReactNode }) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [checked, setChecked] = useState(false);
   const correct = questions.filter((q) => answers[q.id] === q.answer).length;
@@ -169,11 +213,11 @@ function Quiz({ questions, onScore, reveal }: { questions: Mcq[]; onScore: (scor
         <div key={q.id} className="quiz-q">
           <p>{q.question}</p>
           <div className="options inline">
-            {q.options.map((opt, i) => {
+            {shuffledOrder(q.id + q.question, q.options.length).map((i) => {
               const state = !checked ? (answers[q.id] === i ? 'selected' : '') : i === q.answer ? 'correct' : answers[q.id] === i ? 'wrong' : '';
               return (
-                <button key={opt} type="button" disabled={checked} className={`option ${state}`} onClick={() => setAnswers({ ...answers, [q.id]: i })}>
-                  {opt}
+                <button key={i} type="button" disabled={checked} className={`option ${state}`} onClick={() => setAnswers({ ...answers, [q.id]: i })}>
+                  {q.options[i]}
                 </button>
               );
             })}
@@ -202,8 +246,8 @@ function Quiz({ questions, onScore, reveal }: { questions: Mcq[]; onScore: (scor
           </p>
           {reveal && (
             <details>
-              <summary>Xem lời thoại</summary>
-              <p>{reveal}</p>
+              <summary>Xem lời thoại / bản dịch</summary>
+              {reveal}
             </details>
           )}
           <button
@@ -222,31 +266,71 @@ function Quiz({ questions, onScore, reveal }: { questions: Mcq[]; onScore: (scor
   );
 }
 
+function Shadowing({ activity, ctx, onScore }: { activity: { sentences: Phrase[]; titleVi: string }; ctx: Ctx; onScore: (score: number) => void }) {
+  const byChar = Boolean(ctx.language.countsCharacters);
+  const [best, setBest] = useState<Record<number, number>>({});
+  const [heard, setHeard] = useState<Record<number, string>>({});
+  const done = Object.keys(best).length === activity.sentences.length;
+
+  function record(i: number, transcript: string) {
+    setHeard((h) => ({ ...h, [i]: transcript }));
+    const score = shadowingScore(activity.sentences[i]!.text, transcript, byChar);
+    const next = { ...best, [i]: Math.max(best[i] ?? 0, score) };
+    setBest(next);
+    if (Object.keys(next).length === activity.sentences.length) {
+      const values = Object.values(next);
+      onScore(Math.round(values.reduce((x, y) => x + y, 0) / values.length));
+    }
+  }
+
+  return (
+    <div className="card">
+      <h3>{activity.titleVi}</h3>
+      <p className="muted small">Bấm 🔊 nghe câu mẫu, rồi bấm “Nói lại” và đọc theo. App so khớp những gì bạn nói với câu mẫu.</p>
+      {activity.sentences.map((s, i) => (
+        <div key={s.text} className="shadow-row">
+          <button type="button" className="icon-btn" onClick={() => speak(s.text, ctx.language.speechLocale, 0.85)} aria-label="Nghe câu mẫu">
+            🔊
+          </button>
+          <TargetText {...s} showReading={ctx.showReading} />
+          <MicButton locale={ctx.language.speechLocale} label="Nói lại" onTranscript={(t) => t && record(i, t)} />
+          {heard[i] !== undefined && (
+            <div className="small">
+              Bạn nói: “{heard[i]}” · <strong className={(best[i] ?? 0) >= 80 ? 'good' : 'warn'}>{best[i]} điểm</strong>
+            </div>
+          )}
+        </div>
+      ))}
+      {done && <p className="next">Hoàn thành! Điểm được tính theo lần nói tốt nhất của mỗi câu.</p>}
+    </div>
+  );
+}
+
 function ProductionTask({
   activity,
-  language,
-  level,
+  ctx,
   onScore,
 }: {
   activity: Extract<Activity, { kind: 'speaking' | 'writing' }>;
-  language: LanguageInfo;
-  level: Level;
+  ctx: Ctx;
   onScore: (score: number) => void;
 }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [result, setResult] = useState<GradeResult>();
-  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const byChar = Boolean(ctx.language.countsCharacters);
+  const length = countLength(text, byChar);
   const isSpeaking = activity.kind === 'speaking';
+  const tooShort = activity.kind === 'writing' && length < activity.minLength;
 
   async function submit() {
     setBusy(true);
     setError(undefined);
     try {
-      const graded = await gradeResponse({
-        language: language.code,
-        level,
+      const graded = await gradeResponse(ctx.code, {
+        language: ctx.language.code,
+        level: ctx.level,
         skill: activity.kind,
         task: activity.prompt,
         response: text,
@@ -264,9 +348,9 @@ function ProductionTask({
   return (
     <div className="card">
       <h3>{activity.titleVi}</h3>
-      <p>{activity.prompt}</p>
+      <p className="target-text">{activity.prompt}</p>
       <p className="muted small">{activity.hintVi}</p>
-      {isSpeaking && <MicButton locale={language.speechLocale} onTranscript={setText} />}
+      {isSpeaking && <MicButton locale={ctx.language.speechLocale} onTranscript={setText} />}
       <textarea
         rows={isSpeaking ? 4 : 8}
         value={text}
@@ -275,17 +359,12 @@ function ProductionTask({
       />
       {activity.kind === 'writing' && (
         <p className="muted small">
-          {words} từ (tối thiểu {activity.minWords})
+          {length} {byChar ? 'chữ' : 'từ'} (tối thiểu {activity.minLength})
         </p>
       )}
       {error && <p className="error">{error}</p>}
-      <button
-        type="button"
-        className="btn primary"
-        disabled={busy || !text.trim() || (activity.kind === 'writing' && words < activity.minWords)}
-        onClick={submit}
-      >
-        {busy ? 'AI đang chấm…' : 'Nộp để AI chấm'}
+      <button type="button" className="btn primary" disabled={busy || !text.trim() || tooShort} onClick={submit}>
+        {busy ? 'AI đang chấm (10–30 giây)…' : 'Nộp để AI chấm'}
       </button>
       {result && <GradeCard result={result} />}
     </div>

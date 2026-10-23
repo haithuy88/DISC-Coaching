@@ -1,43 +1,45 @@
-import { GradeResultSchema, type ChatRequest, type GradeRequest, type GradeResult } from '../../shared/api';
+import {
+  ChatReplySchema,
+  GradeResultSchema,
+  LoginResultSchema,
+  type ApiRequest,
+  type ChatRequest,
+  type GradeRequest,
+  type GradeResult,
+  type LoginResult,
+  type Profile,
+} from '../../shared/api';
+import { z, type ZodType } from 'zod';
 
-async function errorMessage(res: Response): Promise<string> {
+// Bản build cho người dùng gọi thẳng URL /exec của Apps Script; khi dev, vite chuyển /api sang tools/dev-api.ts.
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+async function call<T>(body: ApiRequest, schema: ZodType<T>): Promise<T> {
+  let res: Response;
   try {
-    const data = (await res.json()) as { error?: string };
-    return data.error ?? `Lỗi ${res.status}`;
+    // text/plain để trình duyệt không gửi preflight CORS (Apps Script không trả lời OPTIONS).
+    res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
   } catch {
-    return `Lỗi ${res.status}`;
+    throw new Error('Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
   }
+  if (!res.ok) throw new Error(`Máy chủ lỗi (${res.status}).`);
+  const json = (await res.json()) as { ok: boolean; data?: unknown; error?: string };
+  if (!json.ok) throw new Error(json.error ?? 'Lỗi không rõ.');
+  return schema.parse(json.data);
 }
 
-export async function gradeResponse(req: GradeRequest): Promise<GradeResult> {
-  const res = await fetch('/api/grade', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) throw new Error(await errorMessage(res));
-  return GradeResultSchema.parse(await res.json());
+export function login(code: string): Promise<LoginResult> {
+  return call({ action: 'login', code }, LoginResultSchema);
 }
 
-const STREAM_ERROR = /\n\[\[error:(.*)\]\]$/;
+export function saveProgress(code: string, profile: Profile): Promise<unknown> {
+  return call({ action: 'saveProgress', code, payload: profile }, z.unknown());
+}
 
-/** Gửi hội thoại, gọi onText với toàn bộ câu trả lời tích luỹ mỗi khi có chữ mới. */
-export async function streamChat(req: ChatRequest, onText: (soFar: string) => void): Promise<string> {
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok || !res.body) throw new Error(await errorMessage(res));
-  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-  let text = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    text += value;
-    onText(text.replace(STREAM_ERROR, ''));
-  }
-  const failed = STREAM_ERROR.exec(text);
-  if (failed) throw new Error(failed[1]);
-  return text;
+export async function chat(code: string, req: ChatRequest): Promise<string> {
+  return (await call({ action: 'chat', code, payload: req }, ChatReplySchema)).reply;
+}
+
+export function gradeResponse(code: string, req: GradeRequest): Promise<GradeResult> {
+  return call({ action: 'grade', code, payload: req }, GradeResultSchema);
 }

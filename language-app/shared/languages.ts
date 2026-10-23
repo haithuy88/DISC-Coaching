@@ -13,6 +13,10 @@ export interface LanguageInfo {
   examFramework?: { name: string; levels: Record<Level, string> };
   /** Đã có giáo trình soạn sẵn chưa. Ngôn ngữ chưa có vẫn luyện được với bot. */
   hasCourse: boolean;
+  /** Có phiên âm (pinyin…) để bật/tắt trong bài học. */
+  readingName?: string;
+  /** Độ dài bài viết tính theo chữ (Hoa, Nhật) thay vì theo từ. */
+  countsCharacters?: boolean;
 }
 
 // Quy đổi gần đúng, chỉ để người học dễ hình dung; không phải bảng quy đổi chính thức.
@@ -31,15 +35,17 @@ export const LANGUAGES: LanguageInfo[] = [
   },
   {
     code: 'zh',
-    nameVi: 'Tiếng Trung',
+    nameVi: 'Tiếng Hoa',
     nameEn: 'Mandarin Chinese (Simplified)',
     flag: '🇨🇳',
     speechLocale: 'zh-CN',
+    readingName: 'pinyin',
+    countsCharacters: true,
     examFramework: {
       name: 'HSK',
-      levels: { A1: 'HSK 1–2', A2: 'HSK 3', B1: 'HSK 4', B2: 'HSK 5', C1: 'HSK 6', C2: 'HSK 7–9' },
+      levels: { A1: '1–2', A2: '3', B1: '4', B2: '5', C1: '6', C2: '7–9' },
     },
-    hasCourse: false,
+    hasCourse: true,
   },
   {
     code: 'ja',
@@ -47,6 +53,8 @@ export const LANGUAGES: LanguageInfo[] = [
     nameEn: 'Japanese',
     flag: '🇯🇵',
     speechLocale: 'ja-JP',
+    readingName: 'furigana',
+    countsCharacters: true,
     examFramework: {
       name: 'JLPT',
       levels: { A1: 'N5', A2: 'N4', B1: 'N3', B2: 'N2', C1: 'N1', C2: 'N1+' },
@@ -61,7 +69,7 @@ export const LANGUAGES: LanguageInfo[] = [
     speechLocale: 'ko-KR',
     examFramework: {
       name: 'TOPIK',
-      levels: { A1: 'TOPIK 1', A2: 'TOPIK 2', B1: 'TOPIK 3', B2: 'TOPIK 4', C1: 'TOPIK 5', C2: 'TOPIK 6' },
+      levels: { A1: '1', A2: '2', B1: '3', B2: '4', C1: '5', C2: '6' },
     },
     hasCourse: false,
   },

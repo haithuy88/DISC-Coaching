@@ -1,5 +1,5 @@
-// Hợp đồng API giữa trình duyệt và máy chủ. Cả hai phía cùng dùng các schema này,
-// nên máy chủ từ chối mọi payload lệch khỏi đây trước khi gọi Claude.
+// Hợp đồng API giữa trình duyệt và Apps Script. Cả hai phía cùng dùng các schema này
+// (backend được đóng gói kèm zod vào Code.gs), nên payload lệch khỏi đây bị từ chối trước khi gọi Claude.
 import { z } from 'zod';
 
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
@@ -12,8 +12,10 @@ export type Skill = z.infer<typeof SkillSchema>;
 
 const LanguageCode = z.string().regex(/^[a-z]{2}(-[A-Z]{2})?$/);
 const ShortText = z.string().trim().min(1).max(600);
+/** Mã truy cập do quản trị cấp trong tab NGUOI_DUNG. */
+export const AccessCodeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{4,20}$/);
 
-/** Bối cảnh chung của mọi yêu cầu: học ngôn ngữ nào, ở level nào. */
+/** Bối cảnh chung của mọi yêu cầu AI: học ngôn ngữ nào, ở level nào. */
 const LearnerContext = z.object({
   language: LanguageCode,
   level: LevelSchema,
@@ -47,6 +49,8 @@ export const ChatRequestSchema = LearnerContext.extend({
 }).strict();
 export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 
+export const ChatReplySchema = z.object({ reply: z.string() });
+
 // ---------- Chấm Nói / Viết / tổng kết hội thoại ----------
 
 export const GradeRequestSchema = LearnerContext.extend({
@@ -79,4 +83,55 @@ export const GradeResultSchema = z.object({
 });
 export type GradeResult = z.infer<typeof GradeResultSchema>;
 
-export const ApiErrorSchema = z.object({ error: z.string() });
+// ---------- Tiến độ (lưu vào tab TIEN_DO) ----------
+
+const IsoDate = z.string().max(40);
+
+export const ActivityResultSchema = z.object({
+  skill: SkillSchema,
+  score: z.number().min(0).max(100),
+  at: IsoDate,
+});
+
+/** Thẻ ôn tập từ vựng theo hộp Leitner. */
+export const ReviewCardSchema = z.object({
+  box: z.number().int().min(0).max(5),
+  due: IsoDate,
+});
+
+export const ProfileSchema = z.object({
+  language: LanguageCode,
+  level: LevelSchema,
+  placement: z
+    .object({ at: IsoDate, objectiveLevel: LevelSchema.optional(), writingLevel: LevelSchema.optional() })
+    .optional(),
+  results: z.record(z.string().max(80), ActivityResultSchema),
+  /** Khoá là "<lessonId>|<từ>". */
+  review: z.record(z.string().max(160), ReviewCardSchema).default({}),
+  conversations: z.number().int().min(0),
+  xp: z.number().int().min(0),
+  /** XP theo ngày (YYYY-MM-DD), chỉ giữ 30 ngày gần nhất, dùng cho chuỗi ngày và mục tiêu ngày. */
+  daily: z.record(z.string().max(10), z.number().int().min(0)).default({}),
+  dailyGoal: z.number().int().min(5).max(500).default(30),
+});
+export type Profile = z.infer<typeof ProfileSchema>;
+
+// ---------- Phong bì yêu cầu ----------
+
+export const ApiRequestSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('login'), code: AccessCodeSchema }).strict(),
+  z.object({ action: z.literal('chat'), code: AccessCodeSchema, payload: ChatRequestSchema }).strict(),
+  z.object({ action: z.literal('grade'), code: AccessCodeSchema, payload: GradeRequestSchema }).strict(),
+  z.object({ action: z.literal('saveProgress'), code: AccessCodeSchema, payload: ProfileSchema }).strict(),
+]);
+export type ApiRequest = z.input<typeof ApiRequestSchema>;
+
+export const LoginResultSchema = z.object({
+  name: z.string(),
+  group: z.string(),
+  profiles: z.record(z.string(), ProfileSchema),
+});
+export type LoginResult = z.infer<typeof LoginResultSchema>;
+
+/** Mọi phản hồi: { ok: true, data } hoặc { ok: false, error }. */
+export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };

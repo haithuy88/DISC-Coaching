@@ -7,16 +7,16 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env server/index.ts & vite",
+    "dev": "node --env-file-if-exists=.env tools/dev-api.ts & vite",
     "dev:web": "vite",
-    "dev:api": "node --env-file-if-exists=.env server/index.ts",
-    "build": "tsc -b && vite build",
-    "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.ts",
+    "dev:api": "node --env-file-if-exists=.env tools/dev-api.ts",
+    "build": "node scripts/build-gas.mjs --check && tsc -b && vite build",
+    "build:gas": "node scripts/build-gas.mjs",
+    "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.131.0",
     "@fontsource/inter": "5.3.0",
     "@fontsource/plus-jakarta-sans": "5.3.0",
     "react": "19.3.0",

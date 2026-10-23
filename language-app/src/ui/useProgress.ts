@@ -1,33 +1,113 @@
-import { useCallback, useEffect, useState } from 'react';
+// Trạng thái người học: lưu tạm trên máy (học tiếp được khi mạng chập chờn) và đồng bộ lên Sheets.
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Level } from '../../shared/api';
-import { loadProgress, newProfile, saveProgress, type LearnerProfile, type ProgressState } from '../domain/progress';
+import { mergeProfiles, newProfile, type LearnerProfile } from '../domain/progress';
+import { login as apiLogin, saveProgress } from '../lib/api';
+
+export interface Session {
+  code: string;
+  name: string;
+  group: string;
+  activeLanguage?: string;
+  profiles: Record<string, LearnerProfile>;
+}
+
+export type SyncState = 'idle' | 'saving' | 'saved' | 'error';
+
+const STORAGE_KEY = 'polyglot-session-v1';
+const SYNC_DELAY_MS = 2000;
+
+function loadSession(): Session | undefined {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Session) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function storeSession(session: Session | undefined): void {
+  try {
+    if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Không lưu được trên máy thì vẫn dùng tiếp trong phiên hiện tại.
+  }
+}
 
 export function useProgress() {
-  const [state, setState] = useState<ProgressState>(loadProgress);
+  const [session, setSession] = useState<Session | undefined>(loadSession);
+  const [sync, setSync] = useState<SyncState>('idle');
+  /** Ngôn ngữ có thay đổi chưa đẩy lên Sheets. */
+  const dirty = useRef(new Set<string>());
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useEffect(() => saveProgress(state), [state]);
+  useEffect(() => storeSession(session), [session]);
 
-  const profile = state.activeLanguage ? state.profiles[state.activeLanguage] : undefined;
+  const flush = useCallback(async (s: Session) => {
+    const langs = [...dirty.current];
+    dirty.current.clear();
+    if (langs.length === 0) return;
+    setSync('saving');
+    try {
+      for (const lang of langs) {
+        const p = s.profiles[lang];
+        if (p) await saveProgress(s.code, p);
+      }
+      setSync('saved');
+    } catch {
+      langs.forEach((l) => dirty.current.add(l));
+      setSync('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session || dirty.current.size === 0) return;
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => void flush(session), SYNC_DELAY_MS);
+    return () => clearTimeout(timer.current);
+  }, [session, flush]);
+
+  const login = useCallback(async (code: string) => {
+    const result = await apiLogin(code);
+    const previous = loadSession();
+    const local = previous?.code === code.toUpperCase() ? previous.profiles : {};
+    const profiles = mergeProfiles(local, result.profiles);
+    // Bản trên máy mới hơn thì đẩy lại lên Sheets.
+    for (const [lang, p] of Object.entries(profiles)) if (p !== result.profiles[lang]) dirty.current.add(lang);
+    setSession({ code: code.toUpperCase(), name: result.name, group: result.group, activeLanguage: previous?.activeLanguage, profiles });
+  }, []);
+
+  const logout = useCallback(() => {
+    setSession(undefined);
+    dirty.current.clear();
+  }, []);
 
   const selectLanguage = useCallback((language: string | undefined) => {
-    setState((s) => ({ ...s, activeLanguage: language }));
+    setSession((s) => s && { ...s, activeLanguage: language });
   }, []);
 
   const startProfile = useCallback((language: string, level: Level, placement?: LearnerProfile['placement']) => {
-    setState((s) => {
+    setSession((s) => {
+      if (!s) return s;
       const existing = s.profiles[language] ?? newProfile(language, level);
-      return { activeLanguage: language, profiles: { ...s.profiles, [language]: { ...existing, level, placement } } };
+      dirty.current.add(language);
+      return { ...s, activeLanguage: language, profiles: { ...s.profiles, [language]: { ...existing, level, placement } } };
     });
   }, []);
 
   const updateProfile = useCallback((update: (p: LearnerProfile) => LearnerProfile) => {
-    setState((s) => {
-      const lang = s.activeLanguage;
+    setSession((s) => {
+      const lang = s?.activeLanguage;
       const current = lang ? s.profiles[lang] : undefined;
-      if (!lang || !current) return s;
-      return { ...s, profiles: { ...s.profiles, [lang]: update(current) } };
+      if (!s || !lang || !current) return s;
+      const next = update(current);
+      if (next === current) return s;
+      dirty.current.add(lang);
+      return { ...s, profiles: { ...s.profiles, [lang]: next } };
     });
   }, []);
 
-  return { state, profile, selectLanguage, startProfile, updateProfile };
+  const profile = session?.activeLanguage ? session.profiles[session.activeLanguage] : undefined;
+  return { session, profile, sync, login, logout, selectLanguage, startProfile, updateProfile, retrySync: () => session && flush(session) };
 }
