@@ -97,7 +97,7 @@ GitHub Pages: giao diện React (tĩnh, miễn phí)     Google Sheets  NGUOI_DU
 2. **Settings → Secrets and variables → Actions → tab Variables → New repository variable**:
    - Tên: `LANG_APP_API_URL`
    - Giá trị: URL `/exec` ở bước 1.6
-3. Merge nhánh này vào `main`. GitHub tự build và đăng app (xem tiến trình ở tab **Actions**).
+3. Merge nhánh này vào nhánh mặc định của repo. GitHub tự build và đăng app (xem tiến trình ở tab **Actions**).
 4. App chạy tại **https://haithuy88.github.io/DISC-Coaching/** — gửi link này cho người học.
 
 ### Bước 3 — Cấp mã cho người học
